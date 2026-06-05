@@ -11,18 +11,21 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp -r migrations dist/migrations",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo no tests",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate-cli.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.3",
+    "embedded-postgres": "18.1.0-beta.16",
     "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/pg": "^8.11.10",
     "drizzle-kit": "^0.30.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

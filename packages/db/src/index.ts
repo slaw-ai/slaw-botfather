@@ -4,6 +4,7 @@ import * as schema from "./schema/index.js";
 
 export * from "./schema/index.js";
 export { schema };
+export { ensureDatabase, runMigrations, MIGRATIONS_FOLDER } from "./bootstrap.js";
 
 export type BotfatherDb = ReturnType<typeof createDb>;
 

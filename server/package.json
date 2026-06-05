@@ -13,6 +13,7 @@
     "@slaw/botfather-protocol": "workspace:*",
     "argon2": "^0.41.1",
     "drizzle-orm": "^0.38.3",
+    "embedded-postgres": "18.1.0-beta.16",
     "express": "^4.21.2",
     "pg": "^8.13.1",
     "ws": "^8.18.0",

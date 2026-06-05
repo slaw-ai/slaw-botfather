@@ -1,6 +1,9 @@
 export interface BotfatherConfig {
   port: number;
-  databaseUrl: string;
+  /** external Postgres URL; when undefined the server boots embedded Postgres */
+  databaseUrl: string | undefined;
+  /** port for the embedded Postgres (ignored when databaseUrl is set) */
+  embeddedPgPort: number;
   /** instance marked offline after this many missed heartbeat intervals */
   offlineAfterMissedHeartbeats: number;
   heartbeatIntervalSec: number;
@@ -12,9 +15,9 @@ export interface BotfatherConfig {
 export function loadConfig(): BotfatherConfig {
   return {
     port: Number(process.env.BOTFATHER_PORT ?? 8400),
-    databaseUrl:
-      process.env.BOTFATHER_DATABASE_URL ??
-      "postgres://postgres:postgres@127.0.0.1:54330/botfather",
+    // unset → embedded Postgres is auto-started (zero-config dev, like SLAW)
+    databaseUrl: process.env.BOTFATHER_DATABASE_URL || undefined,
+    embeddedPgPort: Number(process.env.BOTFATHER_EMBEDDED_PG_PORT ?? 54330),
     offlineAfterMissedHeartbeats: 3,
     heartbeatIntervalSec: 60,
     staleAfterHours: 24,

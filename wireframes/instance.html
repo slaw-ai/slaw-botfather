@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Instance MEL-CYB-04</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a class="on" href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="crumb"><a href="fleet.html">Fleet</a> /</span><h1>MEL-CYB-04 · default</h1>
+    <span class="st ok"><i></i>ONLINE</span>
+    <span class="crumb mono" style="font-size:10px">machineId 7f3a92e1…c2e1 · slaw 0.4.2 · enrolled 12 May 2026</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="btn ghost">Request live stream</button>
+      <button class="btn danger">Revoke</button>
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpis c6">
+      <div class="kpi"><div class="lbl">Squads</div><div class="val">2</div></div>
+      <div class="kpi"><div class="lbl">Agents</div><div class="val">6</div><div class="sub">2 running now</div></div>
+      <div class="kpi"><div class="lbl">Open Issues</div><div class="val">9</div><div class="sub">4 in progress</div></div>
+      <div class="kpi"><div class="lbl">Spend Today</div><div class="val">$24.80</div></div>
+      <div class="kpi alert"><div class="lbl">Spend MTD</div><div class="val">$412</div><div class="sub" style="color:var(--crit)">103% of $400 budget</div></div>
+      <div class="kpi"><div class="lbl">Tokens Today</div><div class="val">11.4M</div><div class="sub">8.1M in · 3.3M out</div></div>
+    </div>
+
+    <div class="row" style="grid-template-columns:2fr 1fr">
+      <div class="panel">
+        <div class="panel-h"><h2>Instance Spend — Last 14 Days</h2></div>
+        <div class="chart">
+          <div class="bar" style="height:22%"></div><div class="bar" style="height:31%"></div><div class="bar" style="height:18%"></div>
+          <div class="bar" style="height:45%"></div><div class="bar" style="height:38%"></div><div class="bar" style="height:12%"></div>
+          <div class="bar" style="height:8%"></div><div class="bar" style="height:51%"></div><div class="bar" style="height:62%"></div>
+          <div class="bar" style="height:78%"></div><div class="bar" style="height:56%"></div><div class="bar" style="height:73%"></div>
+          <div class="bar" style="height:89%"></div><div class="bar" style="height:96%"></div>
+        </div>
+        <div class="chart-x"><span>24/5</span><span>25/5</span><span>26/5</span><span>27/5</span><span>28/5</span><span>29/5</span><span>30/5</span><span>31/5</span><span>1/6</span><span>2/6</span><span>3/6</span><span>4/6</span><span>5/6</span><span>6/6</span></div>
+        <div class="legend"><span class="dim">spend accelerating — red-team-ops engagement started 1/6</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Cost by Model — MTD</h2></div>
+        <div class="hbars">
+          <div class="hbar"><span>claude-opus-4-6</span><span class="trk"><i style="width:64%"></i></span><span class="v">$264.20</span></div>
+          <div class="hbar"><span>claude-sonnet-4-6</span><span class="trk"><i style="width:28%"></i></span><span class="v">$115.48</span></div>
+          <div class="hbar"><span>claude-haiku-4-5</span><span class="trk"><i style="width:6%"></i></span><span class="v">$24.91</span></div>
+          <div class="hbar"><span>gpt-5.2</span><span class="trk"><i style="width:2%"></i></span><span class="v">$7.41</span></div>
+        </div>
+        <div class="panel-h" style="border-top:1px solid var(--border)"><h2>Reporting Health</h2></div>
+        <div style="padding:12px 16px;font-size:12px" class="muted">
+          Last heartbeat <b class="mono" style="color:var(--text)">4s</b> · last sync batch <b class="mono" style="color:var(--text)">38s</b><br>
+          Spool depth <b class="mono" style="color:var(--text)">0</b> · cursor <span class="mono" style="font-size:10px">01HVX2…9KQ</span><br>
+          Reconciliation: <span class="pill ok">CLEAN</span> <span class="dim">last night 02:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- squads -->
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-h"><h2>Squad — red-team-ops</h2><span class="pill crit">BUDGET BREACH</span><a class="more" href="squad.html">Drill down →</a></div>
+      <table>
+        <thead><tr><th>Agent</th><th>Role</th><th>Adapter</th><th>Status</th><th>Current Issue</th><th class="r">Tokens Today</th><th class="r">Spend MTD</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr class="click"><td><b>recon-alpha</b></td><td class="muted">Squad Lead</td><td class="mono" style="font-size:11px">claude</td><td><span class="st run"><i></i>RUNNING</span></td><td class="muted">RTO-31 · Map external attack surface</td><td class="r mono">4.2M</td><td class="r mono">$148.10</td><td><span class="budget"><i class="c" style="width:99%"></i></span></td></tr>
+          <tr class="click"><td><b>exploit-dev</b></td><td class="muted">Engineer</td><td class="mono" style="font-size:11px">claude</td><td><span class="st run"><i></i>RUNNING</span></td><td class="muted">RTO-34 · PoC for CVE-2026-1142</td><td class="r mono">3.8M</td><td class="r mono">$121.60</td><td><span class="budget"><i class="w" style="width:81%"></i></span></td></tr>
+          <tr class="click"><td><b>report-writer</b></td><td class="muted">Analyst</td><td class="mono" style="font-size:11px">claude</td><td><span class="st ok"><i></i>IDLE</span></td><td class="dim">—</td><td class="r mono">0.9M</td><td class="r mono">$44.85</td><td><span class="budget"><i style="width:45%"></i></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><h2>Squad — threat-intel</h2><span class="pill ok">48% BUDGET</span><a class="more" href="squad.html">Drill down →</a></div>
+      <table>
+        <thead><tr><th>Agent</th><th>Role</th><th>Adapter</th><th>Status</th><th>Current Issue</th><th class="r">Tokens Today</th><th class="r">Spend MTD</th><th>Budget</th></tr></thead>
+        <tbody>
+          <tr class="click"><td><b>intel-lead</b></td><td class="muted">Squad Lead</td><td class="mono" style="font-size:11px">claude</td><td><span class="st ok"><i></i>IDLE</span></td><td class="dim">—</td><td class="r mono">1.1M</td><td class="r mono">$38.20</td><td><span class="budget"><i style="width:38%"></i></span></td></tr>
+          <tr class="click"><td><b>feed-monitor</b></td><td class="muted">Analyst</td><td class="mono" style="font-size:11px">claude</td><td><span class="st ok"><i></i>IDLE</span></td><td class="muted">TI-12 · Daily CTI digest</td><td class="r mono">0.8M</td><td class="r mono">$22.05</td><td><span class="budget"><i style="width:22%"></i></span></td></tr>
+          <tr class="click"><td><b>ioc-correlator</b></td><td class="muted">Engineer</td><td class="mono" style="font-size:11px">codex</td><td><span class="st ok"><i></i>IDLE</span></td><td class="dim">—</td><td class="r mono">0.6M</td><td class="r mono">$17.92</td><td><span class="budget"><i style="width:18%"></i></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

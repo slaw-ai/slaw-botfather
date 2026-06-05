@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>SLAW — Settings · Control Tower</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+  .settings-side{width:200px;background:var(--panel);border-right:1px solid var(--border);padding:18px 12px;flex-shrink:0}
+  .settings-side .h{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);padding:6px 10px;font-weight:600}
+  .settings-side a{display:block;padding:7px 10px;border-radius:7px;color:var(--muted);font-size:13px;font-weight:500;margin-bottom:1px}
+  .settings-side a.on{background:var(--accent-soft);color:var(--text)}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:6px}
+  .field .hint{font-size:11px;color:var(--dim);margin-top:5px}
+  .field input{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font:12px var(--mono)}
+  .field input:disabled{opacity:.6;cursor:not-allowed}
+  .managed{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--warn);background:var(--warn-soft);padding:2px 8px;border-radius:6px;margin-left:8px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg span{padding:7px 14px;font-size:12px;color:var(--muted);cursor:pointer}
+  .seg span.on{background:var(--accent-soft);color:var(--text);font-weight:600}
+  .statbox{display:flex;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .statbox .ic{width:34px;height:34px;border-radius:9px;background:var(--ok-soft);display:grid;place-items:center;color:var(--ok);font-size:16px}
+  .statbox .big{font-size:13.5px;font-weight:600} .statbox .small{font-size:11.5px;color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+  .kv:last-child{border-bottom:0}.kv .k{color:var(--muted)}.kv .v{font-family:var(--mono);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<aside class="settings-side">
+  <div class="logo" style="padding:4px 10px 16px"><div class="logo-mark">S</div><div><b style="font-size:14px">SLAW</b><span style="display:block;font-size:10px;color:var(--dim);letter-spacing:1px">SETTINGS</span></div></div>
+  <div class="h">Workspace</div>
+  <a href="#">General</a><a href="#">Squads</a><a href="#">Adapters &amp; Models</a><a href="#">Budgets</a>
+  <div class="h">System</div>
+  <a href="#">Storage</a><a href="#">Secrets</a><a class="on" href="#">Control Tower</a><a href="#">Telemetry</a>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Control Tower</h1>
+    <span class="crumb">how this instance reports to botfather</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content" style="max-width:720px">
+
+    <!-- connection status -->
+    <div class="statbox">
+      <div class="ic">●</div>
+      <div style="flex:1"><div class="big">Connected &amp; enrolled</div><div class="small">Reporting to <b>botfather.corp.internal</b> · approved 12 May 2026 · last sync 38s ago</div></div>
+      <span class="pill ok">ACTIVE</span>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-h"><h2>Connection</h2><span class="managed">⚿ managed by your organisation</span></div>
+      <div style="padding:16px">
+        <div class="field">
+          <label>Control tower URL</label>
+          <input value="https://botfather.corp.internal" disabled>
+          <div class="hint">Locked by your organisation's device configuration (MDM). Contact IT to change.</div>
+        </div>
+        <div class="field">
+          <label>Enforcement</label>
+          <div class="seg"><span class="on">Enforce (hard gate)</span><span>Advisory</span></div>
+          <div class="hint">Enforce: SLAW is blocked until enrolled while the tower is reachable. Already-enrolled instances keep running if the tower goes down.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-h"><h2>This Instance</h2></div>
+      <div style="padding:6px 16px">
+        <div class="kv"><span class="k">Machine</span><span class="v">MEL-CYB-04</span></div>
+        <div class="kv"><span class="k">machineId <span style="cursor:pointer;color:var(--accent)">⧉ copy</span></span><span class="v">7f3a92e1-…-c2e1</span></div>
+        <div class="kv"><span class="k">Instance ID</span><span class="v">default</span></div>
+        <div class="kv"><span class="k">Admitted via</span><span class="v">auto-rule *-CYB-*</span></div>
+        <div class="kv"><span class="k">API key</span><span class="v">stored in secrets · rotated 12 May</span></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-h"><h2>Reporting Health</h2></div>
+      <div style="padding:6px 16px">
+        <div class="kv"><span class="k">Last heartbeat</span><span class="v">4s ago</span></div>
+        <div class="kv"><span class="k">Last sync batch</span><span class="v">38s ago · 12 events</span></div>
+        <div class="kv"><span class="k">Spool depth</span><span class="v">0 (drained)</span></div>
+        <div class="kv"><span class="k">Sync cursor</span><span class="v">01HVX2…9KQ</span></div>
+        <div class="kv"><span class="k">Last reconciliation</span><span class="v">02:00 · clean</span></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-h"><h2>What Gets Reported</h2><span class="pill info">TRANSPARENCY</span></div>
+      <div style="padding:14px 16px;font-size:12.5px" class="muted">
+        <p>Squad, agent, project &amp; issue <b>names and statuses</b>; token counts; cost; run states; budget alerts.</p>
+        <p style="margin-top:8px;color:var(--text)">Never sent: issue descriptions, comments, code, diffs, run logs, or any work content. That stays on this machine.</p>
+        <div class="field" style="margin-top:14px;margin-bottom:0">
+          <label>Report issue titles <span class="pill ok" style="margin-left:6px">ON</span></label>
+          <div class="hint">Off → only issue IDs &amp; statuses are sent. Managed by org policy.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn ghost">Re-enrol</button>
+      <button class="btn ghost" disabled title="locked by policy">Disconnect</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost">View full report payload</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

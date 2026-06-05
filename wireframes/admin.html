@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Enrollment &amp; Admin</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a class="on" href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Approvals &amp; Admin</h1>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <button class="btn">+ Auto-approve rule</button>
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="row" style="grid-template-columns:1.5fr 1fr">
+
+      <div>
+        <!-- approval queue -->
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Approval Queue</h2><span class="pill warn">2 PENDING</span><span class="more">Bulk approve ▾</span></div>
+          <table>
+            <thead><tr><th>Machine / Instance</th><th>Identity</th><th>SLAW</th><th>Requested</th><th>Matched Rule</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="mach"><div class="os"></div><div><div class="nm">MEL-ENG-12 <span class="dim" style="font-weight:400">· default</span></div><div class="id">new machine</div></div></div></td>
+                <td class="mono" style="font-size:11px">b2c8…91af</td><td class="mono" style="font-size:11px">0.4.2</td><td class="dim mono" style="font-size:11px">2 min ago</td>
+                <td class="dim">— none —</td>
+                <td class="r" style="white-space:nowrap"><button class="btn" style="padding:4px 10px;font-size:11px">Approve</button> <button class="btn danger" style="padding:4px 10px;font-size:11px">Reject</button></td>
+              </tr>
+              <tr>
+                <td><div class="mach"><div class="os"></div><div><div class="nm">SYD-ENG-04 <span class="dim" style="font-weight:400">· default</span></div><div class="id">new machine</div></div></div></td>
+                <td class="mono" style="font-size:11px">7e10…cc34</td><td class="mono" style="font-size:11px">0.4.2</td><td class="dim mono" style="font-size:11px">18 min ago</td>
+                <td><span class="pill ok">*-ENG-*</span></td>
+                <td class="r" style="white-space:nowrap"><button class="btn" style="padding:4px 10px;font-size:11px">Approve</button> <button class="btn danger" style="padding:4px 10px;font-size:11px">Reject</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 16px;border-top:1px solid var(--border)" class="dim">
+            Instances self-enroll on startup with no token — they sit here until approved. Pending instances hold no API key and can write nothing.
+          </div>
+        </div>
+
+        <!-- auto-approve rules -->
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Auto-Approve Rules</h2><span class="more">+ New rule</span></div>
+          <table>
+            <thead><tr><th>Match field</th><th>Pattern</th><th class="r">Auto-approved</th><th>Created By</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="muted">hostname</td><td class="mono" style="font-size:11px">*-ENG-*</td><td class="r mono">8</td><td class="muted">feroz</td><td class="r"><span class="pill ok">ON</span></td></tr>
+              <tr><td class="muted">hostname</td><td class="mono" style="font-size:11px">*-TST-*</td><td class="r mono">3</td><td class="muted">feroz</td><td class="r"><span class="pill ok">ON</span></td></tr>
+              <tr style="opacity:.55"><td class="muted">hostname</td><td class="mono" style="font-size:11px">*-CYB-*</td><td class="r mono">2</td><td class="muted">feroz</td><td class="r"><span class="pill dim">OFF — manual</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- enrolled instances -->
+        <div class="panel">
+          <div class="panel-h"><h2>Enrolled Instances</h2><span class="dim" style="font-size:11px">17 active · 1 revoked</span></div>
+          <table>
+            <thead><tr><th>Machine / Instance</th><th>Approved</th><th>Admitted Via</th><th>Key Rotated</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div class="mach"><div class="os"></div><div><div class="nm">MEL-CYB-04 <span class="dim" style="font-weight:400">· default</span></div><div class="id">7f3a…c2e1</div></div></div></td><td class="mono" style="font-size:11px">12 May</td><td class="muted">manual · feroz</td><td class="mono" style="font-size:11px">12 May</td><td><span class="st ok"><i></i>ACTIVE</span></td><td class="r"><button class="btn danger" style="padding:4px 10px;font-size:11px">Revoke</button></td></tr>
+              <tr><td><div class="mach"><div class="os"></div><div><div class="nm">SYD-ENG-01 <span class="dim" style="font-weight:400">· default</span></div><div class="id">a91b…77d0</div></div></div></td><td class="mono" style="font-size:11px">12 May</td><td class="muted">rule · *-ENG-*</td><td class="mono" style="font-size:11px">28 May</td><td><span class="st ok"><i></i>ACTIVE</span></td><td class="r"><button class="btn danger" style="padding:4px 10px;font-size:11px">Revoke</button></td></tr>
+              <tr><td><div class="mach"><div class="os"></div><div><div class="nm">SYD-ENG-01 <span class="dim" style="font-weight:400">· experiments</span></div><div class="id">a91b…77d0</div></div></div></td><td class="mono" style="font-size:11px">19 May</td><td class="muted">rule · *-ENG-*</td><td class="mono" style="font-size:11px">19 May</td><td><span class="st ok"><i></i>ACTIVE</span></td><td class="r"><button class="btn danger" style="padding:4px 10px;font-size:11px">Revoke</button></td></tr>
+              <tr><td><div class="mach"><div class="os"></div><div><div class="nm">SYD-TST-07 <span class="dim" style="font-weight:400">· default</span></div><div class="id">be44…0a19</div></div></div></td><td class="mono" style="font-size:11px">14 May</td><td class="muted">rule · *-TST-*</td><td class="mono" style="font-size:11px">14 May</td><td><span class="st ok"><i></i>ACTIVE</span></td><td class="r"><button class="btn danger" style="padding:4px 10px;font-size:11px">Revoke</button></td></tr>
+              <tr style="opacity:.55"><td><div class="mach"><div class="os"></div><div><div class="nm">ADL-TMP-01 <span class="dim" style="font-weight:400">· default</span></div><div class="id">f0e2…881c</div></div></div></td><td class="mono" style="font-size:11px">13 May</td><td class="muted">manual · feroz</td><td class="mono" style="font-size:11px">—</td><td><span class="st off"><i></i>REVOKED</span></td><td class="r"><button class="btn ghost" style="padding:4px 10px;font-size:11px">Re-enable</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <!-- identity / auth -->
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Identity Model</h2></div>
+          <div style="padding:14px 16px;font-size:12px" class="muted">
+            <span class="pill info">PRE-AUTH PHASE</span>
+            <p style="margin-top:8px">Instances are identified by <b class="mono" style="font-size:11px">machineId + instanceId</b> and squad names. No user identities yet.</p>
+            <p style="margin-top:8px">Instances self-enroll on startup (no token) and wait in the approval queue. When <b>Entra ID</b> ships, admission keys off Entra group membership, <span class="mono" style="font-size:11px">userPrincipal</span> is populated, and the fleet gains per-person grouping. No re-enrollment required.</p>
+          </div>
+        </div>
+
+        <!-- data retention -->
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Data &amp; Retention</h2></div>
+          <table>
+            <tbody>
+              <tr><td class="muted">Raw cost facts</td><td class="r mono">13 months</td></tr>
+              <tr><td class="muted">Run facts</td><td class="r mono">90 days</td></tr>
+              <tr><td class="muted">Activity facts</td><td class="r mono">12 months</td></tr>
+              <tr><td class="muted">Daily rollups</td><td class="r mono">indefinite</td></tr>
+              <tr><td class="muted">Issue titles reporting</td><td class="r"><span class="pill ok">ON</span> <span class="dim" style="font-size:10px">fleet default</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ingest health -->
+        <div class="panel">
+          <div class="panel-h"><h2>Ingest Health</h2></div>
+          <table>
+            <tbody>
+              <tr><td class="muted">Events today</td><td class="r mono">48,212</td></tr>
+              <tr><td class="muted">Rejected (schema)</td><td class="r mono">0</td></tr>
+              <tr><td class="muted">Rejected (auth)</td><td class="r mono" style="color:var(--warn)">14</td></tr>
+              <tr><td class="muted">Protocol versions</td><td class="r mono">v1 ×17</td></tr>
+              <tr><td class="muted">Median ingest latency</td><td class="r mono">38 ms</td></tr>
+              <tr><td class="muted">Last reconciliation sweep</td><td class="r mono">02:00 · 17/17 clean</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

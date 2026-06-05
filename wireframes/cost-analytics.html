@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Cost Analytics</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a class="on" href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Cost Analytics</h1>
+    <span class="crumb">network-wide · all instances</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span class="tag" style="padding:5px 10px">Group by: Instance ▾</span>
+      <div class="range"><span>7D</span><span class="on">MTD</span><span>90D</span><span>12M</span></div>
+      <button class="btn ghost">Export CSV</button>
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpis c5">
+      <div class="kpi"><div class="lbl">Total Spend MTD</div><div class="val">$1,247</div><div class="sub"><span class="up">▲ 31%</span> vs May MTD</div></div>
+      <div class="kpi"><div class="lbl">Forecast EOM</div><div class="val">$2,610</div><div class="sub" style="color:var(--warn)">109% of $2,400 network budget</div></div>
+      <div class="kpi"><div class="lbl">Tokens MTD</div><div class="val">612M</div><div class="sub">68% cached input</div></div>
+      <div class="kpi"><div class="lbl">Avg Cost / Run</div><div class="val">$0.42</div><div class="sub"><span class="down">▼ 8%</span> better caching</div></div>
+      <div class="kpi"><div class="lbl">Cost / Issue Done</div><div class="val">$3.86</div><div class="sub">323 issues closed MTD</div></div>
+    </div>
+
+    <div class="row" style="grid-template-columns:2fr 1fr">
+      <div class="panel">
+        <div class="panel-h"><h2>Spend by Day — Stacked by Provider</h2></div>
+        <div class="stack">
+          <div class="col"><div class="seg" style="height:26%;background:var(--bar1)"></div><div class="seg" style="height:8%;background:var(--bar2)"></div><div class="seg" style="height:3%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:31%;background:var(--bar1)"></div><div class="seg" style="height:7%;background:var(--bar2)"></div><div class="seg" style="height:4%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:21%;background:var(--bar1)"></div><div class="seg" style="height:5%;background:var(--bar2)"></div><div class="seg" style="height:2%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:41%;background:var(--bar1)"></div><div class="seg" style="height:10%;background:var(--bar2)"></div><div class="seg" style="height:4%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:36%;background:var(--bar1)"></div><div class="seg" style="height:9%;background:var(--bar2)"></div><div class="seg" style="height:3%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:16%;background:var(--bar1)"></div><div class="seg" style="height:4%;background:var(--bar2)"></div><div class="seg" style="height:2%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:13%;background:var(--bar1)"></div><div class="seg" style="height:4%;background:var(--bar2)"></div><div class="seg" style="height:1%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:46%;background:var(--bar1)"></div><div class="seg" style="height:11%;background:var(--bar2)"></div><div class="seg" style="height:4%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:54%;background:var(--bar1)"></div><div class="seg" style="height:13%;background:var(--bar2)"></div><div class="seg" style="height:5%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:44%;background:var(--bar1)"></div><div class="seg" style="height:10%;background:var(--bar2)"></div><div class="seg" style="height:4%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:49%;background:var(--bar1)"></div><div class="seg" style="height:12%;background:var(--bar2)"></div><div class="seg" style="height:5%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:33%;background:var(--bar1)"></div><div class="seg" style="height:7%;background:var(--bar2)"></div><div class="seg" style="height:3%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:59%;background:var(--bar1)"></div><div class="seg" style="height:15%;background:var(--bar2)"></div><div class="seg" style="height:5%;background:var(--bar3)"></div></div>
+          <div class="col"><div class="seg" style="height:68%;background:var(--bar1)"></div><div class="seg" style="height:17%;background:var(--bar2)"></div><div class="seg" style="height:7%;background:var(--bar3)"></div></div>
+        </div>
+        <div class="chart-x"><span>24/5</span><span>25/5</span><span>26/5</span><span>27/5</span><span>28/5</span><span>29/5</span><span>30/5</span><span>31/5</span><span>1/6</span><span>2/6</span><span>3/6</span><span>4/6</span><span>5/6</span><span>6/6</span></div>
+        <div class="legend"><span><i style="background:#4f8cff"></i>Anthropic</span><span><i style="background:#2dd4a7"></i>OpenAI</span><span><i style="background:#b07aff"></i>Google</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h2>Cost by Model — MTD</h2></div>
+        <div class="hbars">
+          <div class="hbar"><span>claude-opus-4-6</span><span class="trk"><i style="width:58%"></i></span><span class="v">$612.80</span></div>
+          <div class="hbar"><span>claude-sonnet-4-6</span><span class="trk"><i style="width:36%"></i></span><span class="v">$389.41</span></div>
+          <div class="hbar"><span>claude-haiku-4-5</span><span class="trk"><i style="width:9%"></i></span><span class="v">$98.12</span></div>
+          <div class="hbar"><span>gpt-5.2</span><span class="trk"><i style="width:8%;background:var(--bar2)"></i></span><span class="v">$88.20</span></div>
+          <div class="hbar"><span>gemini-3-pro</span><span class="trk"><i style="width:5%;background:var(--bar3)"></i></span><span class="v">$58.91</span></div>
+        </div>
+        <div class="panel-h" style="border-top:1px solid var(--border)"><h2>By Billing Type</h2></div>
+        <div class="hbars">
+          <div class="hbar"><span>metered API</span><span class="trk"><i style="width:84%"></i></span><span class="v">$1,047</span></div>
+          <div class="hbar"><span>subscription incl.</span><span class="trk"><i style="width:13%;background:var(--bar2)"></i></span><span class="v">$163*</span></div>
+          <div class="hbar"><span>sub. overage</span><span class="trk"><i style="width:3%;background:var(--bar3)"></i></span><span class="v">$37</span></div>
+        </div>
+        <div style="padding:0 16px 12px" class="dim" style="font-size:10px">*imputed value of included usage</div>
+      </div>
+    </div>
+
+    <div class="row" style="grid-template-columns:1fr 1fr">
+      <div class="panel">
+        <div class="panel-h"><h2>Top Burners — Instances MTD</h2></div>
+        <table>
+          <thead><tr><th>Instance</th><th class="r">Tokens</th><th class="r">Spend</th><th class="r">vs May</th><th>Trend</th></tr></thead>
+          <tbody>
+            <tr class="click" onclick="location='instance.html'"><td><b>MEL-CYB-04</b> <span class="dim">default</span></td><td class="r mono">186M</td><td class="r mono"><b>$412</b></td><td class="r mono" style="color:var(--crit)">+212%</td><td><span class="pill crit">BREACH</span></td></tr>
+            <tr class="click"><td><b>SYD-ENG-01</b> <span class="dim">default</span></td><td class="r mono">142M</td><td class="r mono">$298</td><td class="r mono" style="color:var(--warn)">+41%</td><td><span class="pill warn">80%</span></td></tr>
+            <tr class="click"><td><b>SYD-TST-07</b> <span class="dim">default</span></td><td class="r mono">118M</td><td class="r mono">$214</td><td class="r mono">+12%</td><td><span class="pill ok">48%</span></td></tr>
+            <tr class="click"><td><b>MEL-ENG-11</b> <span class="dim">default</span></td><td class="r mono">84M</td><td class="r mono">$166</td><td class="r mono" style="color:var(--ok)">−9%</td><td><span class="pill ok">44%</span></td></tr>
+            <tr class="click"><td><b>BNE-QA-02</b> <span class="dim">default</span></td><td class="r mono">52M</td><td class="r mono">$98</td><td class="r mono">+4%</td><td><span class="pill ok">36%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Top Burners — Squads MTD</h2></div>
+        <table>
+          <thead><tr><th>Squad</th><th>Instance</th><th class="r">Spend</th><th class="r">$/Issue</th><th>Budget</th></tr></thead>
+          <tbody>
+            <tr class="click" onclick="location='squad.html'"><td><b>red-team-ops</b></td><td class="dim">MEL-CYB-04</td><td class="r mono"><b>$412</b></td><td class="r mono">$9.81</td><td><span class="budget"><i class="c" style="width:103%"></i></span></td></tr>
+            <tr class="click"><td><b>platform-core</b></td><td class="dim">SYD-ENG-01</td><td class="r mono">$198</td><td class="r mono">$4.40</td><td><span class="budget"><i class="w" style="width:79%"></i></span></td></tr>
+            <tr class="click"><td><b>regression-suite</b></td><td class="dim">SYD-TST-07</td><td class="r mono">$141</td><td class="r mono">$1.92</td><td><span class="budget"><i style="width:51%"></i></span></td></tr>
+            <tr class="click"><td><b>data-pipeline</b></td><td class="dim">MEL-ENG-11</td><td class="r mono">$166</td><td class="r mono">$5.12</td><td><span class="budget"><i style="width:44%"></i></span></td></tr>
+            <tr class="click"><td><b>api-gw</b></td><td class="dim">SYD-ENG-01</td><td class="r mono">$74</td><td class="r mono">$2.86</td><td><span class="budget"><i style="width:31%"></i></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

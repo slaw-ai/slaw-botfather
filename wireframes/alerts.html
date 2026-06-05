@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Alerts</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+  .alert-row{display:grid;grid-template-columns:90px 1fr auto;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);align-items:start}
+  .alert-row:last-child{border-bottom:0}
+  .alert-row:hover{background:var(--hover)}
+  .alert-row .when{font:10px var(--mono);color:var(--dim);text-align:right;padding-top:2px}
+  .alert-row h3{font-size:13px;font-weight:600}
+  .alert-row p{font-size:12px;color:var(--muted);margin-top:3px}
+  .alert-row .meta{font:10px var(--mono);color:var(--dim);margin-top:5px}
+  .alert-row .acts{display:flex;gap:6px;margin-top:8px}
+  .rule{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:12.5px}
+  .rule:last-child{border-bottom:0}
+  .toggle{width:32px;height:18px;border-radius:9px;background:var(--ok);position:relative;flex-shrink:0}
+  .toggle:after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;right:2px}
+  .toggle.off{background:var(--panel2);border:1px solid var(--border)}
+  .toggle.off:after{left:2px;right:auto;background:var(--dim)}
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a class="on" href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Alerts</h1>
+    <span class="crumb">3 active · 12 resolved this week</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span class="tag" style="padding:5px 10px">Severity: All ▾</span>
+      <span class="tag" style="padding:5px 10px">Status: Active ▾</span>
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="row" style="grid-template-columns:2fr 1fr">
+
+      <!-- active + recent feed -->
+      <div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Active</h2></div>
+          <div class="alert-row">
+            <span class="pill crit" style="margin-top:1px">CRITICAL</span>
+            <div>
+              <h3>Hard budget breach — red-team-ops</h3>
+              <p>Squad spend reached <b class="mono">$412.07</b> against a <b class="mono">$400</b> calendar-month budget. Instance raised <span class="mono" style="font-size:11px">budget_hard_threshold_crossed</span>; local hard-stop policy applies.</p>
+              <div class="meta">MEL-CYB-04 · default · squad red-team-ops · first seen 11:32 AEST</div>
+              <div class="acts"><a class="btn ghost" href="squad.html" style="padding:4px 10px;font-size:11px">View squad</a><button class="btn ghost" style="padding:4px 10px;font-size:11px">Acknowledge</button></div>
+            </div>
+            <span class="when">6 min ago</span>
+          </div>
+          <div class="alert-row">
+            <span class="pill warn" style="margin-top:1px">WARNING</span>
+            <div>
+              <h3>Soft threshold 80% — platform-core</h3>
+              <p>Squad at <b class="mono">$198.40</b> of <b class="mono">$250</b> monthly budget with 24 days elapsed. Forecast EOM: <b class="mono">$248</b>.</p>
+              <div class="meta">SYD-ENG-01 · default · squad platform-core · first seen 10:02 AEST</div>
+              <div class="acts"><a class="btn ghost" href="squad.html" style="padding:4px 10px;font-size:11px">View squad</a><button class="btn ghost" style="padding:4px 10px;font-size:11px">Acknowledge</button></div>
+            </div>
+            <span class="when">1 h ago</span>
+          </div>
+          <div class="alert-row">
+            <span class="pill warn" style="margin-top:1px">WARNING</span>
+            <div>
+              <h3>Instance offline — BNE-QA-02</h3>
+              <p>3 consecutive heartbeats missed. Last sync cursor <span class="mono" style="font-size:11px">01HVW8…D2A</span>; spool will drain on reconnect.</p>
+              <div class="meta">BNE-QA-02 · default · last seen 09:41 AEST</div>
+              <div class="acts"><a class="btn ghost" href="instance.html" style="padding:4px 10px;font-size:11px">View instance</a><button class="btn ghost" style="padding:4px 10px;font-size:11px">Acknowledge</button></div>
+            </div>
+            <span class="when">2 h ago</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h2>Resolved — Last 7 Days</h2></div>
+          <div class="alert-row" style="opacity:.65">
+            <span class="pill dim" style="margin-top:1px">RESOLVED</span>
+            <div><h3>Version drift — 3 instances ≤ 0.3.x</h3><p>MEL-ENG-11 and PER-CYB-09 remain below fleet target 0.4.2. Downgraded to info.</p><div class="meta">fleet-wide · resolved automatically when threshold relaxed</div></div>
+            <span class="when">today</span>
+          </div>
+          <div class="alert-row" style="opacity:.65">
+            <span class="pill dim" style="margin-top:1px">RESOLVED</span>
+            <div><h3>Instance offline — PER-CYB-09</h3><p>Returned after 41 minutes; spool drained 312 events, reconciliation clean.</p><div class="meta">PER-CYB-09 · default</div></div>
+            <span class="when">4 Jun</span>
+          </div>
+          <div class="alert-row" style="opacity:.65">
+            <span class="pill dim" style="margin-top:1px">RESOLVED</span>
+            <div><h3>Soft threshold 80% — regression-suite</h3><p>Squad lead raised budget $200 → $300 locally; utilisation now 51%.</p><div class="meta">SYD-TST-07 · default · squad regression-suite</div></div>
+            <span class="when">2 Jun</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- rules -->
+      <div>
+        <div class="panel" style="margin-bottom:18px">
+          <div class="panel-h"><h2>Alert Rules</h2><span class="more">+ New rule</span></div>
+          <div class="rule"><span class="toggle"></span><div><b>Budget hard breach</b><div class="dim" style="font-size:11px">from instance activity facts · severity critical</div></div></div>
+          <div class="rule"><span class="toggle"></span><div><b>Budget soft threshold</b><div class="dim" style="font-size:11px">from instance activity facts · severity warning</div></div></div>
+          <div class="rule"><span class="toggle"></span><div><b>Instance offline</b><div class="dim" style="font-size:11px">3 missed heartbeats · severity warning</div></div></div>
+          <div class="rule"><span class="toggle"></span><div><b>Instance stale</b><div class="dim" style="font-size:11px">24 h silent · severity info</div></div></div>
+          <div class="rule"><span class="toggle"></span><div><b>Spend spike</b><div class="dim" style="font-size:11px">day &gt; 3× trailing-7-day avg · severity warning</div></div></div>
+          <div class="rule"><span class="toggle"></span><div><b>Version drift</b><div class="dim" style="font-size:11px">below fleet target version · severity info</div></div></div>
+          <div class="rule"><span class="toggle off"></span><div><b>Network budget forecast</b><div class="dim" style="font-size:11px">EOM forecast &gt; network budget · severity warning</div></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h2>Notifications</h2></div>
+          <div style="padding:14px 16px;font-size:12px" class="muted">
+            <span class="pill info">DASHBOARD ONLY</span>
+            <p style="margin-top:8px">Alerts surface here and as the sidebar badge. External integrations (Teams, email, webhooks) are planned for a later phase.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

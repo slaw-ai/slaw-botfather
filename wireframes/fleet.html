@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Fleet</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a class="on" href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0<br>last event 4s ago</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Fleet</h1><span class="crumb">14 machines · 17 instances · 31 squads</span>
+    <input class="search" placeholder="⌘K  Search machines, squads, agents…">
+    <div class="range"><span>24H</span><span class="on">7D</span><span>30D</span><span>MTD</span></div>
+    <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+    <div class="avatar">FZ</div>
+  </div>
+
+  <div class="content">
+    <div class="kpis c5">
+      <div class="kpi"><div class="lbl">Instances Online</div><div class="val">15<span class="dim" style="font-size:15px">/17</span></div><div class="sub">1 offline · 1 stale</div></div>
+      <div class="kpi"><div class="lbl">Spend Today</div><div class="val">$84.12</div><div class="sub"><span class="up">▲ 18%</span> vs yesterday</div></div>
+      <div class="kpi"><div class="lbl">Spend MTD</div><div class="val">$1,247</div><div class="sub">budget $2,400 · 52% used</div></div>
+      <div class="kpi"><div class="lbl">Tokens Today</div><div class="val">41.2M</div><div class="sub">28.7M in · 12.5M out</div></div>
+      <div class="kpi alert"><div class="lbl">Active Alerts</div><div class="val">3</div><div class="sub">1 critical · 2 warning</div></div>
+    </div>
+
+    <div class="row" style="grid-template-columns:2.2fr 1fr">
+      <div class="panel">
+        <div class="panel-h"><h2>Network Spend — Last 14 Days</h2><a class="more" href="cost-analytics.html">Cost Analytics →</a></div>
+        <div class="chart">
+          <div class="bar" style="height:34%"></div><div class="bar" style="height:41%"></div><div class="bar" style="height:28%"></div>
+          <div class="bar" style="height:55%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:22%"></div>
+          <div class="bar" style="height:18%"></div><div class="bar" style="height:61%"></div><div class="bar" style="height:72%"></div>
+          <div class="bar" style="height:58%"></div><div class="bar" style="height:66%"></div><div class="bar" style="height:43%"></div>
+          <div class="bar" style="height:79%"></div><div class="bar" style="height:92%"></div>
+        </div>
+        <div class="chart-x"><span>24/5</span><span>25/5</span><span>26/5</span><span>27/5</span><span>28/5</span><span>29/5</span><span>30/5</span><span>31/5</span><span>1/6</span><span>2/6</span><span>3/6</span><span>4/6</span><span>5/6</span><span>6/6</span></div>
+        <div class="legend"><span><i style="background:#4f8cff"></i>Metered API spend</span><span class="dim">peak $92.40 · avg $58.10/day</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h2>Alerts</h2><a class="more" href="alerts.html">All →</a></div>
+        <div>
+          <div class="al"><span class="sev crit"></span><div><div class="t"><b>Hard budget breach</b> — squad <b>red-team-ops</b> on MEL-CYB-04</div><div class="m">$412 / $400 monthly · 6 min ago</div></div></div>
+          <div class="al"><span class="sev warn"></span><div><div class="t"><b>Soft threshold 80%</b> — squad <b>platform-core</b> on SYD-ENG-01</div><div class="m">$198 / $250 monthly · 1 h ago</div></div></div>
+          <div class="al"><span class="sev warn"></span><div><div class="t"><b>Instance offline</b> — BNE-QA-02 missed 3 heartbeats</div><div class="m">last seen 09:41 · 2 h ago</div></div></div>
+          <div class="al"><span class="sev info"></span><div><div class="t"><b>Version drift</b> — 3 instances on slaw ≤ 0.3.x</div><div class="m">fleet target 0.4.2 · today</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><h2>Instances</h2><span class="dim" style="font-size:11px">sorted by spend today</span><span class="more">Filter ▾</span></div>
+      <table>
+        <thead><tr><th>Machine / Instance</th><th>Status</th><th>Squads</th><th>Agents</th><th class="r">Active Runs</th><th class="r">Tokens Today</th><th class="r">Spend Today</th><th>Budget MTD</th><th>SLAW</th><th>Last Seen</th></tr></thead>
+        <tbody>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">MEL-CYB-04</div><div class="id">7f3a…c2e1 · default</div></div></div></td>
+            <td><span class="st ok"><i></i>ONLINE</span></td>
+            <td><span class="tag">red-team-ops</span><span class="tag">threat-intel</span></td>
+            <td class="mono">6</td><td class="r mono">2</td><td class="r mono">11.4M</td><td class="r mono"><b>$24.80</b></td>
+            <td><span class="budget"><i class="c" style="width:103%"></i></span><span class="mono" style="font-size:10px;color:var(--crit)">103%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--dim)">0.4.2</td><td class="dim mono" style="font-size:11px">4s</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">SYD-ENG-01</div><div class="id">a91b…77d0 · default</div></div></div></td>
+            <td><span class="st ok"><i></i>ONLINE</span></td>
+            <td><span class="tag">platform-core</span><span class="tag">api-gw</span><span class="tag">+1</span></td>
+            <td class="mono">9</td><td class="r mono">4</td><td class="r mono">9.8M</td><td class="r mono"><b>$19.42</b></td>
+            <td><span class="budget"><i class="w" style="width:79%"></i></span><span class="mono" style="font-size:10px;color:var(--warn)">79%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--dim)">0.4.2</td><td class="dim mono" style="font-size:11px">12s</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">SYD-ENG-01</div><div class="id">a91b…77d0 · experiments</div></div></div></td>
+            <td><span class="st ok"><i></i>ONLINE</span></td>
+            <td><span class="tag">sandbox</span></td>
+            <td class="mono">2</td><td class="r mono">0</td><td class="r mono">1.1M</td><td class="r mono">$2.05</td>
+            <td><span class="budget"><i style="width:21%"></i></span><span class="mono" style="font-size:10px;color:var(--muted)">21%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--dim)">0.4.2</td><td class="dim mono" style="font-size:11px">9s</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">SYD-TST-07</div><div class="id">be44…0a19 · default</div></div></div></td>
+            <td><span class="st ok"><i></i>ONLINE</span></td>
+            <td><span class="tag">regression-suite</span><span class="tag">e2e-mobile</span></td>
+            <td class="mono">7</td><td class="r mono">3</td><td class="r mono">8.2M</td><td class="r mono">$15.96</td>
+            <td><span class="budget"><i style="width:48%"></i></span><span class="mono" style="font-size:10px;color:var(--muted)">48%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--dim)">0.4.2</td><td class="dim mono" style="font-size:11px">31s</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">MEL-ENG-11</div><div class="id">c7d2…5b88 · default</div></div></div></td>
+            <td><span class="st ok"><i></i>ONLINE</span></td>
+            <td><span class="tag">data-pipeline</span></td>
+            <td class="mono">4</td><td class="r mono">1</td><td class="r mono">5.6M</td><td class="r mono">$11.31</td>
+            <td><span class="budget"><i style="width:44%"></i></span><span class="mono" style="font-size:10px;color:var(--muted)">44%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--warn)">0.3.9 ⚠</td><td class="dim mono" style="font-size:11px">22s</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">BNE-QA-02</div><div class="id">dd01…43fa · default</div></div></div></td>
+            <td><span class="st off"><i></i>OFFLINE</span></td>
+            <td><span class="tag">perf-bench</span></td>
+            <td class="mono">3</td><td class="r mono">—</td><td class="r mono">2.4M</td><td class="r mono">$4.88</td>
+            <td><span class="budget"><i style="width:36%"></i></span><span class="mono" style="font-size:10px;color:var(--muted)">36%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--dim)">0.4.1</td><td class="dim mono" style="font-size:11px;color:var(--crit)">2h 14m</td>
+          </tr>
+          <tr class="click" onclick="location='instance.html'">
+            <td><div class="mach"><div class="os"></div><div><div class="nm">PER-CYB-09</div><div class="id">19ee…b6c3 · default</div></div></div></td>
+            <td><span class="st stale"><i></i>STALE</span></td>
+            <td><span class="tag">vuln-triage</span></td>
+            <td class="mono">3</td><td class="r mono">—</td><td class="r mono">0</td><td class="r mono">$0.00</td>
+            <td><span class="budget"><i style="width:12%"></i></span><span class="mono" style="font-size:10px;color:var(--muted)">12%</span></td>
+            <td class="mono" style="font-size:10px;color:var(--warn)">0.3.6 ⚠</td><td class="dim mono" style="font-size:11px">3d</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Botfather — Issues in Flight</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+</head>
+<body>
+
+<aside class="side">
+  <div class="logo"><div class="logo-mark">BF</div><div><b>BOTFATHER</b><span>SLAW Control Tower</span></div></div>
+  <div class="nav-sec">Monitor</div>
+  <nav class="nav">
+    <a href="fleet.html"><span class="ico">▦</span> Fleet</a>
+    <a class="on" href="issues.html"><span class="ico">◎</span> Issues in Flight</a>
+    <a href="alerts.html"><span class="ico">⚠</span> Alerts <span class="badge">3</span></a>
+  </nav>
+  <div class="nav-sec">Govern</div>
+  <nav class="nav">
+    <a href="cost-analytics.html"><span class="ico">◫</span> Cost Analytics</a>
+    <a href="admin.html"><span class="ico">⚿</span> Approvals &amp; Admin <span class="badge">2</span></a>
+  </nav>
+  <div class="side-foot"><span class="dot">●</span> ingest healthy · v0.1.0</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Issues in Flight</h1>
+    <span class="crumb">what the fleet is working on right now</span>
+    <input class="search" placeholder="Filter by title, squad, instance…">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="tag" style="padding:5px 10px">Status: In Progress ▾</span>
+      <button class="theme-btn" onclick="bfToggleTheme()">☀</button>
+      <div class="avatar">FZ</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpis c4">
+      <div class="kpi"><div class="lbl">In Progress Now</div><div class="val">11</div><div class="sub">across 8 squads, 6 instances</div></div>
+      <div class="kpi"><div class="lbl">Active Agent Runs</div><div class="val">10</div><div class="sub">avg run age 6m 40s</div></div>
+      <div class="kpi"><div class="lbl">Burn Rate Now</div><div class="val">$11.20<span class="dim" style="font-size:14px">/h</span></div><div class="sub">across all running work</div></div>
+      <div class="kpi"><div class="lbl">Closed Today</div><div class="val">23</div><div class="sub">$3.12 avg cost per issue</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h"><h2>Live — In Progress</h2><span class="dim" style="font-size:11px">updates every 60s · live stream when drilled in</span></div>
+      <table>
+        <thead><tr><th>Issue</th><th>Title</th><th>Squad</th><th>Instance</th><th>Agent</th><th>Run</th><th class="r">Run Tokens</th><th class="r">Issue Cost</th><th>Started</th></tr></thead>
+        <tbody>
+          <tr class="click" onclick="location='squad.html'">
+            <td class="mono" style="font-size:11px">RTO-31</td><td><b>Map external attack surface for acme-corp engagement</b></td>
+            <td><span class="tag">red-team-ops</span></td><td class="dim">MEL-CYB-04</td><td class="muted">recon-alpha</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">2.1M</td><td class="r mono">$84.20</td><td class="dim mono" style="font-size:11px">11m</td>
+          </tr>
+          <tr class="click" onclick="location='squad.html'">
+            <td class="mono" style="font-size:11px">RTO-34</td><td><b>PoC for CVE-2026-1142 (staging only)</b></td>
+            <td><span class="tag">red-team-ops</span></td><td class="dim">MEL-CYB-04</td><td class="muted">exploit-dev</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">1.4M</td><td class="r mono">$71.55</td><td class="dim mono" style="font-size:11px">4m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">PLT-88</td><td><b>Migrate auth middleware to v2 token format</b></td>
+            <td><span class="tag">platform-core</span></td><td class="dim">SYD-ENG-01</td><td class="muted">backend-1</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">3.6M</td><td class="r mono">$22.10</td><td class="dim mono" style="font-size:11px">26m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">PLT-91</td><td><b>Flaky integration test in payment reconciler</b></td>
+            <td><span class="tag">platform-core</span></td><td class="dim">SYD-ENG-01</td><td class="muted">backend-2</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">0.8M</td><td class="r mono">$6.41</td><td class="dim mono" style="font-size:11px">3m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">APG-17</td><td><b>Rate-limit headers for partner API tier</b></td>
+            <td><span class="tag">api-gw</span></td><td class="dim">SYD-ENG-01</td><td class="muted">gw-dev</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">1.1M</td><td class="r mono">$8.92</td><td class="dim mono" style="font-size:11px">14m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">REG-203</td><td><b>Nightly regression triage — 4 new failures</b></td>
+            <td><span class="tag">regression-suite</span></td><td class="dim">SYD-TST-07</td><td class="muted">triager</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">2.8M</td><td class="r mono">$12.30</td><td class="dim mono" style="font-size:11px">41m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">E2E-55</td><td><b>iOS checkout flow — selector updates for build 1842</b></td>
+            <td><span class="tag">e2e-mobile</span></td><td class="dim">SYD-TST-07</td><td class="muted">mobile-runner</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">0.6M</td><td class="r mono">$4.18</td><td class="dim mono" style="font-size:11px">7m</td>
+          </tr>
+          <tr class="click">
+            <td class="mono" style="font-size:11px">DP-44</td><td><b>Backfill June events into warehouse partition</b></td>
+            <td><span class="tag">data-pipeline</span></td><td class="dim">MEL-ENG-11</td><td class="muted">etl-agent</td>
+            <td><span class="st run"><i></i>RUNNING</span></td><td class="r mono">1.9M</td><td class="r mono">$9.76</td><td class="dim mono" style="font-size:11px">18m</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="panel-h"><h2>Recently Completed — Today</h2></div>
+      <table>
+        <thead><tr><th>Issue</th><th>Title</th><th>Squad</th><th>Instance</th><th class="r">Total Runs</th><th class="r">Total Cost</th><th>Outcome</th><th>Closed</th></tr></thead>
+        <tbody>
+          <tr class="click"><td class="mono" style="font-size:11px">PLT-86</td><td>Connection pool exhaustion under load</td><td><span class="tag">platform-core</span></td><td class="dim">SYD-ENG-01</td><td class="r mono">6</td><td class="r mono">$11.84</td><td><span class="pill ok">DONE</span></td><td class="dim mono" style="font-size:11px">10:48</td></tr>
+          <tr class="click"><td class="mono" style="font-size:11px">TI-12</td><td>Daily CTI digest — 6 Jun</td><td><span class="tag">threat-intel</span></td><td class="dim">MEL-CYB-04</td><td class="r mono">1</td><td class="r mono">$1.92</td><td><span class="pill ok">DONE</span></td><td class="dim mono" style="font-size:11px">09:15</td></tr>
+          <tr class="click"><td class="mono" style="font-size:11px">REG-201</td><td>Quarantine flaky suite: checkout-edge</td><td><span class="tag">regression-suite</span></td><td class="dim">SYD-TST-07</td><td class="r mono">3</td><td class="r mono">$4.40</td><td><span class="pill ok">DONE</span></td><td class="dim mono" style="font-size:11px">08:52</td></tr>
+          <tr class="click"><td class="mono" style="font-size:11px">DP-41</td><td>Schema drift alert on events_v3 topic</td><td><span class="tag">data-pipeline</span></td><td class="dim">MEL-ENG-11</td><td class="r mono">4</td><td class="r mono">$7.13</td><td><span class="pill warn">ABANDONED</span></td><td class="dim mono" style="font-size:11px">08:30</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

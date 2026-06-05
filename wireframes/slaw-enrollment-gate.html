@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>SLAW — Control Tower Enrollment Gate</title>
+<link rel="stylesheet" href="theme.css"><script src="theme.js"></script>
+<style>
+  body{display:block}
+  .gate-wrap{min-height:100vh;display:grid;place-items:center;background:radial-gradient(900px 500px at 50% -10%, var(--accent-soft), var(--bg) 70%)}
+  .gate{width:440px;background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+  .gate .top{padding:26px 28px 20px;text-align:center;border-bottom:1px solid var(--border)}
+  .gate .mark{width:46px;height:46px;border-radius:11px;background:linear-gradient(135deg,#4f8cff,#7a5cff);display:grid;place-items:center;font:700 18px var(--mono);color:#fff;margin:0 auto 12px}
+  .gate h1{font-size:18px;font-weight:650}
+  .gate .sub{color:var(--muted);font-size:12.5px;margin-top:5px}
+  .gate .body{padding:22px 28px}
+  .stepline{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:22px}
+  .stepline .s{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:11px}
+  .stepline .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);display:grid;place-items:center;font:600 11px var(--mono);color:var(--dim)}
+  .stepline .s.done .dot{background:var(--ok);border-color:var(--ok);color:#04140e}
+  .stepline .s.now .dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+  .stepline .s.now{color:var(--text);font-weight:600}
+  .stepline .bar{width:34px;height:1.5px;background:var(--border);margin:0 6px}
+  .stepline .bar.done{background:var(--ok)}
+  .status-card{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:18px;text-align:center;margin-bottom:18px}
+  .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status-card .big{font-size:14px;font-weight:600}
+  .status-card .small{color:var(--muted);font-size:12px;margin-top:5px}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)} .kv .v{font-family:var(--mono);font-size:11px}
+  .gate .foot{padding:14px 28px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dim)}
+  .switcher{position:fixed;top:14px;right:14px;display:flex;gap:6px}
+  .switcher button{font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="switcher">
+  <button onclick="show('pending')">pending</button>
+  <button onclick="show('rejected')">rejected</button>
+  <button onclick="show('revoked')">revoked</button>
+  <button onclick="show('unreachable')">tower down</button>
+  <button onclick="bfToggleTheme()">theme</button>
+</div>
+
+<div class="gate-wrap">
+  <div class="gate">
+    <div class="top">
+      <div class="mark">S</div>
+      <h1>Connect to Control Tower</h1>
+      <div class="sub">This SLAW instance is managed by your organisation and must enrol before use.</div>
+    </div>
+    <div class="body">
+      <div class="stepline">
+        <div class="s done"><span class="dot">✓</span> Connect</div>
+        <div class="bar done"></div>
+        <div class="s now" id="step2"><span class="dot">2</span> Enrol</div>
+        <div class="bar"></div>
+        <div class="s" id="step3"><span class="dot">3</span> Approved</div>
+      </div>
+
+      <!-- PENDING (default) -->
+      <div id="card">
+        <div class="status-card">
+          <div class="spinner"></div>
+          <div class="big">Awaiting administrator approval</div>
+          <div class="small">Your control tower has registered this machine. An admin needs to approve it before SLAW can start.</div>
+        </div>
+      </div>
+
+      <div class="kv"><span class="k">Control tower</span><span class="v">https://botfather.corp.internal</span></div>
+      <div class="kv"><span class="k">Machine</span><span class="v">MEL-ENG-12</span></div>
+      <div class="kv"><span class="k">machineId</span><span class="v">b2c8…91af</span></div>
+      <div class="kv"><span class="k">Instance</span><span class="v">default · slaw 0.4.2</span></div>
+      <div class="kv"><span class="k" id="laststate">State</span><span class="v" id="stateval">PENDING · polling every 10s</span></div>
+    </div>
+    <div class="foot"><span style="color:var(--ok)">●</span> <span id="footmsg">Connected to tower · enforcement: enforce (hard gate)</span></div>
+  </div>
+</div>
+
+<script>
+function show(s){
+  var card=document.getElementById('card'), sv=document.getElementById('stateval'),
+      foot=document.getElementById('footmsg'), step3=document.getElementById('step3');
+  if(s==='pending'){
+    card.innerHTML='<div class="status-card"><div class="spinner"></div><div class="big">Awaiting administrator approval</div><div class="small">Your control tower has registered this machine. An admin needs to approve it before SLAW can start.</div></div>';
+    sv.textContent='PENDING · polling every 10s'; foot.textContent='Connected to tower · enforcement: enforce (hard gate)';
+  }
+  if(s==='rejected'){
+    card.innerHTML='<div class="status-card" style="border-color:var(--crit-soft)"><div class="big" style="color:var(--crit)">Enrolment declined</div><div class="small">An administrator declined this machine. Contact your administrator if you believe this is an error.</div><button class="btn ghost" style="margin-top:12px;font-size:11px;padding:5px 12px">Retry enrolment</button></div>';
+    sv.textContent='REJECTED'; foot.textContent='Connected to tower · access denied';
+  }
+  if(s==='revoked'){
+    card.innerHTML='<div class="status-card"><div class="spinner"></div><div class="big" style="color:var(--warn)">Access revoked — re-enrolling</div><div class="small">An administrator revoked this instance. It has automatically re-submitted for approval.</div></div>';
+    sv.textContent='REVOKED → PENDING'; foot.textContent='Connected to tower · re-enrolling';
+  }
+  if(s==='unreachable'){
+    card.innerHTML='<div class="status-card"><div class="spinner"></div><div class="big">Contacting control tower…</div><div class="small">Cannot reach https://botfather.corp.internal. Retrying with backoff. SLAW stays locked until the tower responds (enforce mode).</div><div class="small" style="margin-top:8px;color:var(--dim)">An already-enrolled instance would run offline here and keep spooling. This machine has never enrolled.</div></div>';
+    sv.textContent='UNREACHABLE · retry in 30s'; foot.textContent='Tower unreachable · enforcement: enforce';
+  }
+}
+</script>
+</body>
+</html>

@@ -4,9 +4,12 @@
   "version": "0.1.0",
   "scripts": {
     "build": "pnpm -r build",
+    "build:libs": "pnpm --filter @slaw/botfather-protocol build && pnpm --filter @slaw-botfather/db build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "dev": "pnpm --filter @slaw-botfather/server dev"
+    "dev": "pnpm run build:libs && pnpm --filter @slaw-botfather/server dev",
+    "dev:server": "pnpm run build:libs && pnpm --filter @slaw-botfather/server dev",
+    "dev:ui": "pnpm --filter @slaw-botfather/ui dev"
   },
   "packageManager": "pnpm@9.15.4",
   "pnpm": {

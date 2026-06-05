@@ -1,0 +1,10 @@
+/* app-only additions on top of the wireframe theme.css design system */
+html, body, #root { height: 100%; }
+#root { display: flex; width: 100%; }
+a { cursor: pointer; }
+.loading { padding: 40px; color: var(--dim); font: 12px var(--mono); }
+.empty { padding: 28px 16px; color: var(--dim); text-align: center; font-size: 12px; }
+button.theme-btn, .btn { cursor: pointer; }
+.row.cols-2-1 { grid-template-columns: 2fr 1fr; }
+.row.cols-1-1 { grid-template-columns: 1fr 1fr; }
+.row.cols-22-1 { grid-template-columns: 2.2fr 1fr; }

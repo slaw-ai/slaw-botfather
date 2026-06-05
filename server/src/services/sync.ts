@@ -118,7 +118,7 @@ async function applyUpsert(db: BotfatherDb, instanceFk: string, u: EntityUpsert)
 }
 
 /** Insert a fact; returns true if inserted, false if deduplicated. */
-async function applyFact(db: BotfatherDb, instanceFk: string, f: FactEvent): Promise<boolean> {
+export async function applyFact(db: BotfatherDb, instanceFk: string, f: FactEvent): Promise<boolean> {
   switch (f.type) {
     case "cost_event": {
       const res = await db
@@ -211,6 +211,11 @@ export async function applySyncBatch(
     .where(eq(instances.id, instanceFk));
 
   return { upserts, facts, deduplicated };
+}
+
+/** Single-fact path for the live WebSocket stream. */
+export async function applyFactLive(db: BotfatherDb, instanceFk: string, f: FactEvent): Promise<boolean> {
+  return applyFact(db, instanceFk, f);
 }
 
 /** Resolve squadFk references for mirrored entities (best-effort linker). */

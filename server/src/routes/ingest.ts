@@ -4,16 +4,19 @@ import {
   enrollPollRequestSchema,
   heartbeatRequestSchema,
   syncRequestSchema,
+  manifestRequestSchema,
   type EnrollResponse,
   type EnrollPollResponse,
   type HeartbeatResponse,
   type SyncResponse,
+  type ManifestResponse,
 } from "@slaw/botfather-protocol";
 import { eq } from "drizzle-orm";
 import type { BotfatherDb } from "@slaw-botfather/db";
 import { instances, machines } from "@slaw-botfather/db";
 import { enroll, pollEnrollment } from "../services/enrollment.js";
 import { applySyncBatch, linkSquadFks } from "../services/sync.js";
+import { reconcile } from "../services/reconciliation.js";
 import { instanceAuth, ingestRateLimit, authedInstance } from "../middleware/instance-auth.js";
 import type { BotfatherConfig } from "../config.js";
 
@@ -97,6 +100,17 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
       directives: [],
     };
     res.json(body);
+  });
+
+  r.post("/manifest", auth, limit, async (req, res) => {
+    const parsed = manifestRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message, code: "invalid_payload" });
+      return;
+    }
+    const inst = authedInstance(res);
+    const result: ManifestResponse = await reconcile(db, inst.id, parsed.data);
+    res.json(result);
   });
 
   return r;

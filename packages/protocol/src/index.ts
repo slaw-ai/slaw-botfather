@@ -247,6 +247,57 @@ export const syncResponseSchema = z.object({
 });
 export type SyncResponse = z.infer<typeof syncResponseSchema>;
 
+/* ────────────────────────── live stream (phase 2) ────────────────────────── */
+
+/**
+ * Instance opens an OUTBOUND WebSocket to wss://botfather/api/ingest/v1/live
+ * (ARCHITECTURE §4.4) only while an admin has a drill-down open. The instance
+ * first sends a hello frame to authenticate, then streams fact events live.
+ */
+export const liveHelloSchema = z.object({
+  type: z.literal("hello"),
+  protocolVersion: z.literal(PROTOCOL_VERSION),
+  apiKey: z.string(),
+});
+export type LiveHello = z.infer<typeof liveHelloSchema>;
+
+export const liveFrameSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("fact"), event: factEventSchema }),
+  z.object({ type: z.literal("ping") }),
+]);
+export type LiveFrame = z.infer<typeof liveFrameSchema>;
+
+/** Server → instance acknowledgement of a successful hello. */
+export const liveAckSchema = z.object({ type: z.literal("ack"), subscribed: z.boolean() });
+export type LiveAck = z.infer<typeof liveAckSchema>;
+
+/* ────────────────────────── reconciliation ────────────────────────── */
+
+/**
+ * POST /api/ingest/v1/manifest — nightly self-heal (ARCHITECTURE §4.5).
+ * Instance reports per-entity-type counts; botfather compares against its
+ * own view and asks for a full resync of any divergent type.
+ */
+export const manifestRequestSchema = z.object({
+  protocolVersion: z.literal(PROTOCOL_VERSION),
+  sentAt: z.string().datetime(),
+  counts: z.object({
+    squads: z.number().int().nonnegative(),
+    agents: z.number().int().nonnegative(),
+    projects: z.number().int().nonnegative(),
+    issues: z.number().int().nonnegative(),
+    costEvents: z.number().int().nonnegative(),
+  }),
+});
+export type ManifestRequest = z.infer<typeof manifestRequestSchema>;
+
+export const manifestResponseSchema = z.object({
+  inSync: z.boolean(),
+  /** entity types where botfather's count disagrees → instance should full-resync */
+  resyncTypes: z.array(z.enum(["squad", "agent", "project", "issue", "cost_event"])),
+});
+export type ManifestResponse = z.infer<typeof manifestResponseSchema>;
+
 /* ────────────────────────── errors ────────────────────────── */
 
 export const protocolErrorSchema = z.object({

@@ -8,8 +8,18 @@ import {
   autoApproveRules,
   squads,
   costFacts,
+  alerts,
+  issues,
 } from "@slaw-botfather/db";
 import { decideEnrollment, revokeInstance } from "../services/enrollment.js";
+import {
+  networkSummary,
+  spendByDay,
+  costByModelMtd,
+  costByBillingTypeMtd,
+  topBurnerInstancesMtd,
+  topBurnerSquadsMtd,
+} from "../services/analytics.js";
 
 /**
  * Admin API (v1: single local admin, no auth — bind to localhost / put behind
@@ -124,6 +134,68 @@ export function adminRouter(db: BotfatherDb): Router {
   r.post("/instances/:id/revoke", async (req, res) => {
     const ok = await revokeInstance(db, req.params.id, "admin");
     res.status(ok ? 200 : 404).json({ ok });
+  });
+
+  /* ── cost analytics ── */
+  r.get("/analytics/summary", async (_req, res) => {
+    res.json(await networkSummary(db));
+  });
+
+  r.get("/analytics/cost", async (req, res) => {
+    const days = Math.min(Number(req.query.days ?? 14), 365);
+    const [byDay, byModel, byBilling, topInstances, topSquads] = await Promise.all([
+      spendByDay(db, days),
+      costByModelMtd(db),
+      costByBillingTypeMtd(db),
+      topBurnerInstancesMtd(db),
+      topBurnerSquadsMtd(db),
+    ]);
+    res.json({ byDay, byModel, byBilling, topInstances, topSquads });
+  });
+
+  /* ── issues in flight ── */
+  r.get("/issues", async (req, res) => {
+    const status = typeof req.query.status === "string" ? req.query.status : "in_progress";
+    const rows = await db
+      .select({
+        localId: issues.localId,
+        title: issues.title,
+        status: issues.status,
+        squadLocalId: issues.squadLocalId,
+        assigneeAgentLocalId: issues.assigneeAgentLocalId,
+        updatedAt: issues.updatedAt,
+        hostname: machines.hostname,
+        instanceFk: issues.instanceFk,
+        squadName: squads.name,
+      })
+      .from(issues)
+      .innerJoin(instances, eq(issues.instanceFk, instances.id))
+      .innerJoin(machines, eq(instances.machineFk, machines.id))
+      .leftJoin(squads, eq(issues.squadFk, squads.id))
+      .where(eq(issues.status, status))
+      .orderBy(desc(issues.updatedAt))
+      .limit(200);
+    res.json({ issues: rows });
+  });
+
+  /* ── alerts ── */
+  r.get("/alerts", async (req, res) => {
+    const status = typeof req.query.status === "string" ? req.query.status : "active";
+    const rows = await db
+      .select()
+      .from(alerts)
+      .where(eq(alerts.status, status))
+      .orderBy(desc(alerts.firstSeenAt));
+    res.json({ alerts: rows });
+  });
+
+  r.post("/alerts/:id/acknowledge", async (req, res) => {
+    const updated = await db
+      .update(alerts)
+      .set({ status: "acknowledged" })
+      .where(and(eq(alerts.id, req.params.id), eq(alerts.status, "active")))
+      .returning({ id: alerts.id });
+    res.status(updated.length ? 200 : 404).json({ ok: updated.length > 0 });
   });
 
   return r;

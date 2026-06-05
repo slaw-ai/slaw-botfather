@@ -18,6 +18,7 @@ export function CostAnalytics() {
         <span className="crumb">network-wide · all instances</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <ThemeButton />
+          <div className="avatar">FZ</div>
         </div>
       </div>
 

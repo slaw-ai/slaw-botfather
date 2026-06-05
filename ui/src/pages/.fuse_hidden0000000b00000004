@@ -38,6 +38,7 @@ export function InstanceDetail() {
             Revoke
           </button>
           <ThemeButton />
+          <div className="avatar">FZ</div>
         </div>
       </div>
 

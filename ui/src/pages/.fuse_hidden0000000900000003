@@ -23,6 +23,7 @@ export function Issues() {
         <span className="crumb">what the fleet is working on right now</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <ThemeButton />
+          <div className="avatar">FZ</div>
         </div>
       </div>
 

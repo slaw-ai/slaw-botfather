@@ -33,6 +33,7 @@ export function Admin() {
         <h1>Approvals &amp; Admin</h1>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <ThemeButton />
+          <div className="avatar">FZ</div>
         </div>
       </div>
 

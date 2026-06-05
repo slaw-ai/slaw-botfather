@@ -29,6 +29,7 @@ export function Alerts() {
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <span className="pill info">DASHBOARD ONLY</span>
           <ThemeButton />
+          <div className="avatar">FZ</div>
         </div>
       </div>
 

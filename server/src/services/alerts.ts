@@ -3,6 +3,7 @@ import type { BotfatherDb } from "@slaw-botfather/db";
 import { alerts, instances, machines } from "@slaw-botfather/db";
 import type { BotfatherConfig } from "../config.js";
 import { rows } from "./sql-util.js";
+import { resolveLimits } from "./limits.js";
 
 export type Severity = "critical" | "warning" | "info";
 
@@ -244,11 +245,74 @@ async function fleetTargetVersion(db: BotfatherDb): Promise<string | null> {
 }
 
 /** Run all rules once. Exported for tests. */
+/**
+ * Tower-side defence in depth: independently of the instance reporting a breach
+ * fact, compare each instance's MTD usage (from cost_facts we already store)
+ * against its resolved limit. Cost is checked for metered rows, tokens for
+ * subscription rows — matching the plan-aware enforcement on the instance.
+ */
+async function evalTowerLimitBreach(db: BotfatherDb): Promise<void> {
+  const active = await db
+    .select({ id: instances.id, instanceId: instances.instanceId })
+    .from(instances)
+    .where(sql`${instances.status} in ('ok','offline','stale')`);
+
+  const breached: string[] = [];
+  for (const inst of active) {
+    const limit = await resolveLimits(db, inst.id);
+    if (limit.mode === "off") continue;
+    if (limit.costLimitCents == null && limit.tokenLimit == null) continue;
+
+    const [u] = rows<{ metered_cents: number; sub_tokens: number; hostname: string }>(
+      await db.execute(sql`
+        SELECT
+          coalesce(sum(case when cf.billing_type = 'metered_api' then cf.cost_cents else 0 end), 0)::int AS metered_cents,
+          coalesce(sum(case when cf.billing_type in ('subscription_included','subscription_overage')
+            then cf.input_tokens + cf.cached_input_tokens + cf.output_tokens else 0 end), 0)::bigint AS sub_tokens,
+          (select m.hostname from machines m join instances i on i.machine_fk = m.id where i.id = ${inst.id}) AS hostname
+        FROM cost_facts cf
+        WHERE cf.instance_fk = ${inst.id}
+          AND cf.occurred_at >= date_trunc('month', now() at time zone 'utc')
+      `),
+    );
+    const meteredCents = Number(u?.metered_cents ?? 0);
+    const subTokens = Number(u?.sub_tokens ?? 0);
+    const host = u?.hostname ?? inst.instanceId;
+
+    const checks: Array<{ metric: string; observed: number; ceiling: number | null; human: string }> = [
+      { metric: "cost", observed: meteredCents, ceiling: limit.costLimitCents, human: `$${(meteredCents / 100).toFixed(2)} of $${((limit.costLimitCents ?? 0) / 100).toFixed(2)}` },
+      { metric: "tokens", observed: subTokens, ceiling: limit.tokenLimit, human: `${subTokens.toLocaleString()} of ${(limit.tokenLimit ?? 0).toLocaleString()} tokens` },
+    ];
+    let raised = false;
+    for (const c of checks) {
+      if (c.ceiling == null || c.ceiling <= 0) continue;
+      const pct = (c.observed / c.ceiling) * 100;
+      if (pct < limit.warnPercent) continue;
+      const hard = c.observed >= c.ceiling;
+      await raise(db, {
+        rule: hard ? "tower_limit_breach" : "tower_limit_warning",
+        severity: hard ? "critical" : "warning",
+        instanceFk: inst.id,
+        squadLocalId: null,
+        title: `${hard ? "Budget limit reached" : "Budget limit warning"} — ${host}`,
+        detail: `Control-tower ${c.metric} limit ${hard ? "reached" : `at ${Math.round(pct)}%`}: ${c.human}`,
+        dedupeKey: `${inst.id}:${c.metric}`,
+      });
+      raised = true;
+    }
+    if (raised) breached.push(inst.id);
+  }
+  // resolve stale alerts for instances no longer breaching
+  await resolveWhere(db, "tower_limit_breach", breached);
+  await resolveWhere(db, "tower_limit_warning", breached);
+}
+
 export async function evaluateAlerts(db: BotfatherDb): Promise<void> {
   await evalBudgetAlerts(db);
   await evalInstanceHealth(db);
   await evalSpendSpike(db);
   await evalVersionDrift(db, await fleetTargetVersion(db));
+  await evalTowerLimitBreach(db);
 }
 
 export function startAlertEvaluator(db: BotfatherDb, _config: BotfatherConfig): NodeJS.Timeout {

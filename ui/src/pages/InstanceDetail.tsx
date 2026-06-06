@@ -11,8 +11,10 @@ export function InstanceDetail() {
   if (loading) return <div className="loading">loading instance…</div>;
   if (!data) return <div className="empty">Instance not found.</div>;
 
-  const { instance, squads, costByModelMtd } = data;
-  const maxModel = Math.max(1, ...costByModelMtd.map((m) => m.costCents));
+  const { instance } = data;
+  const squads = data.squads ?? [];
+  const costByModelMtd = data.costByModelMtd ?? [];
+  const maxModel = Math.max(1, ...costByModelMtd.map((m) => Number(m.costCents) || 0));
 
   const revoke = async () => {
     if (!confirm(`Revoke ${instance.hostname}? Its API key dies immediately.`)) return;

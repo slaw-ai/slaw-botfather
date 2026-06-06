@@ -111,6 +111,13 @@ export const api = {
   revoke: (id: string) => post<{ ok: boolean }>(`/instances/${id}/revoke`),
 };
 
-export const money = (cents: number) => `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-export const compact = (n: number) =>
-  n >= 1e9 ? `${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n);
+export const money = (cents: number | null | undefined) => {
+  const c = Number(cents);
+  const safe = Number.isFinite(c) ? c : 0;
+  return `$${(safe / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+export const compact = (n: number | null | undefined) => {
+  const v = Number(n);
+  const safe = Number.isFinite(v) ? v : 0;
+  return safe >= 1e9 ? `${(safe / 1e9).toFixed(1)}B` : safe >= 1e6 ? `${(safe / 1e6).toFixed(1)}M` : safe >= 1e3 ? `${(safe / 1e3).toFixed(1)}K` : String(safe);
+};

@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, money, compact, type LimitMode, type LimitInput } from "../api.ts";
+import {
+  api,
+  money,
+  compact,
+  parseDollarsToCents,
+  formatCentsToInput,
+  parseTokenInput,
+  formatTokensToInput,
+  type LimitMode,
+  type LimitInput,
+} from "../api.ts";
 import { useFetch } from "../useFetch.ts";
 import { ThemeButton } from "../Shell.tsx";
 
-// dollars <-> cents helpers for the form fields
-const centsToDollars = (c: number | null) => (c == null ? "" : (c / 100).toString());
-const dollarsToCents = (s: string): number | null => {
-  const t = s.trim();
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
-};
 const numOrNull = (s: string): number | null => {
   const t = s.trim();
   if (t === "") return null;
@@ -39,8 +41,8 @@ export function Limits() {
   useEffect(() => {
     const e = ent.data?.enterprise;
     if (e) {
-      setCost(centsToDollars(e.costLimitCents));
-      setTokens(e.tokenLimit == null ? "" : String(e.tokenLimit));
+      setCost(formatCentsToInput(e.costLimitCents));
+      setTokens(formatTokensToInput(e.tokenLimit));
       setWarn(String(e.warnPercent));
       setMode(e.mode);
     }
@@ -51,8 +53,8 @@ export function Limits() {
     setMsg(null);
     try {
       const body: LimitInput = {
-        costLimitCents: dollarsToCents(cost),
-        tokenLimit: numOrNull(tokens),
+        costLimitCents: parseDollarsToCents(cost),
+        tokenLimit: parseTokenInput(tokens),
         warnPercent: numOrNull(warn) ?? 80,
         mode,
       };
@@ -92,22 +94,24 @@ export function Limits() {
                 <input
                   className="inp"
                   inputMode="decimal"
-                  placeholder="no limit"
+                  placeholder="e.g. 50,000"
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
+                  onBlur={() => setCost(formatCentsToInput(parseDollarsToCents(cost)))}
                 />
-                <span className="hint">Blank = no cost cap</span>
+                <span className="hint">Whole dollars · blank = no cost cap</span>
               </label>
               <label className="lbl">
                 Token ceiling / month
                 <input
                   className="inp"
-                  inputMode="numeric"
-                  placeholder="no limit"
+                  inputMode="text"
+                  placeholder="e.g. 20M"
                   value={tokens}
                   onChange={(e) => setTokens(e.target.value)}
+                  onBlur={() => setTokens(formatTokensToInput(parseTokenInput(tokens)))}
                 />
-                <span className="hint">Used when runs are subscription-billed</span>
+                <span className="hint">Accepts 20M / 1.5B · blank = no token cap</span>
               </label>
               <label className="lbl">
                 Warn at %

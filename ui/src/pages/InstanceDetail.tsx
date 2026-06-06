@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { api, money, compact, type LimitMode, type LimitInput } from "../api.ts";
+import {
+  api,
+  money,
+  compact,
+  parseDollarsToCents,
+  formatCentsToInput,
+  parseTokenInput,
+  formatTokensToInput,
+  type LimitMode,
+  type LimitInput,
+} from "../api.ts";
 import { useFetch } from "../useFetch.ts";
 import { ThemeButton } from "../Shell.tsx";
 
@@ -493,13 +503,6 @@ export function InstanceDetail() {
   );
 }
 
-const centsToDollars = (c: number | null) => (c == null ? "" : (c / 100).toString());
-const dollarsToCents = (s: string): number | null => {
-  const t = s.trim();
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
-};
 const numOrNull = (s: string): number | null => {
   const t = s.trim();
   if (t === "") return null;
@@ -523,8 +526,8 @@ function LimitsPanel({ instanceId, spendMtdCents }: { instanceId: string; spendM
 
   useEffect(() => {
     if (ovr) {
-      setCost(centsToDollars(ovr.costLimitCents));
-      setTokens(ovr.tokenLimit == null ? "" : String(ovr.tokenLimit));
+      setCost(formatCentsToInput(ovr.costLimitCents));
+      setTokens(formatTokensToInput(ovr.tokenLimit));
       setWarn(ovr.warnPercent == null ? "" : String(ovr.warnPercent));
       setMode(ovr.mode ?? "inherit");
     }
@@ -544,8 +547,8 @@ function LimitsPanel({ instanceId, spendMtdCents }: { instanceId: string; spendM
     setMsg(null);
     try {
       const body: LimitInput = {
-        costLimitCents: dollarsToCents(cost),
-        tokenLimit: numOrNull(tokens),
+        costLimitCents: parseDollarsToCents(cost),
+        tokenLimit: parseTokenInput(tokens),
         warnPercent: warn.trim() === "" ? null : numOrNull(warn),
         mode: mode === "inherit" ? null : mode,
       };
@@ -624,11 +627,27 @@ function LimitsPanel({ instanceId, spendMtdCents }: { instanceId: string; spendM
             <div className="form-grid">
               <label className="lbl">
                 Cost ceiling / mo (USD)
-                <input className="inp" inputMode="decimal" placeholder="inherit / no cap" value={cost} onChange={(e) => setCost(e.target.value)} />
+                <input
+                  className="inp"
+                  inputMode="decimal"
+                  placeholder="e.g. 20,000"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                  onBlur={() => setCost(formatCentsToInput(parseDollarsToCents(cost)))}
+                />
+                <span className="hint">Blank = inherit / no cap</span>
               </label>
               <label className="lbl">
                 Token ceiling / mo
-                <input className="inp" inputMode="numeric" placeholder="inherit / no cap" value={tokens} onChange={(e) => setTokens(e.target.value)} />
+                <input
+                  className="inp"
+                  inputMode="text"
+                  placeholder="e.g. 5M"
+                  value={tokens}
+                  onChange={(e) => setTokens(e.target.value)}
+                  onBlur={() => setTokens(formatTokensToInput(parseTokenInput(tokens)))}
+                />
+                <span className="hint">Accepts 5M / 1.5B · blank = inherit</span>
               </label>
               <label className="lbl">
                 Warn at %

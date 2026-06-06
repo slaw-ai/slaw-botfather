@@ -1,7 +1,16 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { api, money } from "../api.ts";
+import { api, money, compact } from "../api.ts";
 import { useFetch } from "../useFetch.ts";
 import { ThemeButton } from "../Shell.tsx";
+
+const EMPTY_TOKENS = {
+  inputTokens: 0,
+  cachedInputTokens: 0,
+  outputTokens: 0,
+  totalTokens: 0,
+  events: 0,
+  subscriptionDominant: false,
+};
 
 export function InstanceDetail() {
   const { id = "" } = useParams();
@@ -14,7 +23,19 @@ export function InstanceDetail() {
   const { instance } = data;
   const squads = data.squads ?? [];
   const costByModelMtd = data.costByModelMtd ?? [];
-  const maxModel = Math.max(1, ...costByModelMtd.map((m) => Number(m.costCents) || 0));
+  const tok = data.tokensMtd ?? EMPTY_TOKENS;
+  const cachedPct =
+    tok.inputTokens + tok.cachedInputTokens > 0
+      ? Math.round((tok.cachedInputTokens / (tok.inputTokens + tok.cachedInputTokens)) * 100)
+      : 0;
+  // Under a subscription (cost ~$0) weight the model bars by tokens, not dollars.
+  const modelTokens = (m: { inputTokens?: number; cachedInputTokens?: number; outputTokens?: number }) =>
+    (Number(m.inputTokens) || 0) + (Number(m.cachedInputTokens) || 0) + (Number(m.outputTokens) || 0);
+  const weighByTokens = tok.subscriptionDominant;
+  const maxModel = Math.max(
+    1,
+    ...costByModelMtd.map((m) => (weighByTokens ? modelTokens(m) : Number(m.costCents) || 0)),
+  );
 
   const revoke = async () => {
     if (!confirm(`Revoke ${instance.hostname}? Its API key dies immediately.`)) return;
@@ -44,18 +65,35 @@ export function InstanceDetail() {
       </div>
 
       <div className="content">
-        <div className="kpis c4">
+        <div className="kpis c6">
           <div className="kpi">
             <div className="lbl">Squads</div>
             <div className="val">{squads.length}</div>
           </div>
           <div className="kpi">
-            <div className="lbl">Spend Today</div>
-            <div className="val">{money(instance.spendTodayCents)}</div>
-          </div>
-          <div className="kpi">
             <div className="lbl">Spend MTD</div>
             <div className="val">{money(instance.spendMtdCents)}</div>
+            <div className="sub">
+              {tok.subscriptionDominant ? (
+                <span className="pill info">SUBSCRIPTION</span>
+              ) : (
+                `${money(instance.spendTodayCents)} today`
+              )}
+            </div>
+          </div>
+          <div className="kpi">
+            <div className="lbl">Tokens MTD</div>
+            <div className="val">{compact(tok.totalTokens)}</div>
+            <div className="sub">{tok.events.toLocaleString()} events</div>
+          </div>
+          <div className="kpi">
+            <div className="lbl">Input Tokens</div>
+            <div className="val">{compact(tok.inputTokens)}</div>
+            <div className="sub">{cachedPct}% cached</div>
+          </div>
+          <div className="kpi">
+            <div className="lbl">Output Tokens</div>
+            <div className="val">{compact(tok.outputTokens)}</div>
           </div>
           <div className="kpi">
             <div className="lbl">SLAW Version</div>
@@ -110,21 +148,24 @@ export function InstanceDetail() {
 
           <div className="panel">
             <div className="panel-h">
-              <h2>Cost by Model — MTD</h2>
+              <h2>{weighByTokens ? "Tokens by Model — MTD" : "Cost by Model — MTD"}</h2>
             </div>
             <div className="hbars">
               {costByModelMtd.length === 0 ? (
-                <div className="empty">No cost facts yet.</div>
+                <div className="empty">No usage yet.</div>
               ) : (
-                costByModelMtd.map((m) => (
-                  <div className="hbar" key={m.model}>
-                    <span>{m.model}</span>
-                    <span className="trk">
-                      <i style={{ width: `${(m.costCents / maxModel) * 100}%` }} />
-                    </span>
-                    <span className="v">{money(m.costCents)}</span>
-                  </div>
-                ))
+                costByModelMtd.map((m) => {
+                  const weight = weighByTokens ? modelTokens(m) : Number(m.costCents) || 0;
+                  return (
+                    <div className="hbar" key={m.model}>
+                      <span>{m.model}</span>
+                      <span className="trk">
+                        <i style={{ width: `${(weight / maxModel) * 100}%` }} />
+                      </span>
+                      <span className="v">{weighByTokens ? compact(modelTokens(m)) : money(m.costCents)}</span>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

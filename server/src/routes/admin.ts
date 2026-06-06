@@ -12,6 +12,7 @@ import {
   issues,
 } from "@slaw-botfather/db";
 import { decideEnrollment, revokeInstance } from "../services/enrollment.js";
+import { rows } from "../services/sql-util.js";
 import {
   networkSummary,
   spendByDay,
@@ -132,6 +133,7 @@ export function adminRouter(db: BotfatherDb): Router {
         model: costFacts.model,
         costCents: sql<number>`sum(${costFacts.costCents})::int`,
         inputTokens: sql<number>`sum(${costFacts.inputTokens})::bigint`,
+        cachedInputTokens: sql<number>`sum(${costFacts.cachedInputTokens})::bigint`,
         outputTokens: sql<number>`sum(${costFacts.outputTokens})::bigint`,
       })
       .from(costFacts)
@@ -142,7 +144,46 @@ export function adminRouter(db: BotfatherDb): Router {
         ),
       )
       .groupBy(costFacts.model);
-    res.json({ instance: inst, squads: squadRows, costByModelMtd: costByModel });
+
+    // Token + billing-mix totals MTD — the meaningful signal when cost is $0
+    // under a subscription plan.
+    const [tok] = rows<{
+      input_tokens: number;
+      cached_input_tokens: number;
+      output_tokens: number;
+      events: number;
+      metered_cents: number;
+      subscription_events: number;
+    }>(
+      await db.execute(sql`
+        SELECT
+          coalesce(sum(input_tokens), 0)::bigint        AS input_tokens,
+          coalesce(sum(cached_input_tokens), 0)::bigint AS cached_input_tokens,
+          coalesce(sum(output_tokens), 0)::bigint       AS output_tokens,
+          count(*)::int                                 AS events,
+          coalesce(sum(cost_cents) filter (where billing_type = 'metered_api'), 0)::int AS metered_cents,
+          count(*) filter (where billing_type in ('subscription_included','subscription_overage'))::int AS subscription_events
+        FROM cost_facts
+        WHERE instance_fk = ${inst.id}
+          AND occurred_at >= date_trunc('month', now() at time zone 'utc')
+      `),
+    );
+
+    const inputTokens = Number(tok?.input_tokens ?? 0);
+    const cachedInputTokens = Number(tok?.cached_input_tokens ?? 0);
+    const outputTokens = Number(tok?.output_tokens ?? 0);
+    const tokensMtd = {
+      inputTokens,
+      cachedInputTokens,
+      outputTokens,
+      totalTokens: inputTokens + cachedInputTokens + outputTokens,
+      events: Number(tok?.events ?? 0),
+      // subscription-dominant when most events carry no metered cost
+      subscriptionDominant:
+        Number(tok?.subscription_events ?? 0) > 0 && Number(tok?.metered_cents ?? 0) === 0,
+    };
+
+    res.json({ instance: inst, squads: squadRows, costByModelMtd: costByModel, tokensMtd });
   });
 
   r.post("/instances/:id/revoke", async (req, res) => {

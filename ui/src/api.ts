@@ -85,7 +85,15 @@ export const api = {
     get<{
       instance: FleetInstance & { reportIssueTitles: boolean };
       squads: { id: string; localId: string; name: string; status: string; budgetMonthlyCents: number | null; spentMonthlyCents: number }[];
-      costByModelMtd: { model: string; costCents: number }[];
+      costByModelMtd: { model: string; costCents: number; inputTokens: number; cachedInputTokens: number; outputTokens: number }[];
+      tokensMtd: {
+        inputTokens: number;
+        cachedInputTokens: number;
+        outputTokens: number;
+        totalTokens: number;
+        events: number;
+        subscriptionDominant: boolean;
+      };
     }>(`/instances/${id}`),
   issues: (status = "in_progress") =>
     get<{

@@ -102,8 +102,22 @@ export function adminRouter(db: BotfatherDb): Router {
 
   r.get("/instances/:id", async (req, res) => {
     const [inst] = await db
-      .select()
+      .select({
+        id: instances.id,
+        instanceId: instances.instanceId,
+        status: instances.status,
+        slawVersion: instances.slawVersion,
+        lastHeartbeatAt: instances.lastHeartbeatAt,
+        enrolledAt: instances.enrolledAt,
+        reportIssueTitles: instances.reportIssueTitles,
+        machineId: machines.machineId,
+        hostname: machines.hostname,
+        os: machines.os,
+        spendTodayCents: sql<number>`coalesce((select sum(cf.cost_cents)::int from cost_facts cf where cf.instance_fk = ${instances.id} and cf.occurred_at >= date_trunc('day', now() at time zone 'utc')), 0)`,
+        spendMtdCents: sql<number>`coalesce((select sum(cf.cost_cents)::int from cost_facts cf where cf.instance_fk = ${instances.id} and cf.occurred_at >= date_trunc('month', now() at time zone 'utc')), 0)`,
+      })
       .from(instances)
+      .innerJoin(machines, eq(instances.machineFk, machines.id))
       .where(eq(instances.id, req.params.id));
     if (!inst) {
       res.status(404).json({ error: "not found" });

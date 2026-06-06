@@ -58,7 +58,7 @@ export function InstanceDetail() {
           <div className="kpi">
             <div className="lbl">SLAW Version</div>
             <div className="val" style={{ fontSize: 18 }}>{instance.slawVersion}</div>
-            <div className="sub mono" style={{ fontSize: 10 }}>{instance.machineId.slice(0, 18)}…</div>
+            <div className="sub mono" style={{ fontSize: 10 }}>{(instance.machineId ?? "").slice(0, 18)}…</div>
           </div>
         </div>
 

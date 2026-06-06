@@ -69,7 +69,7 @@ export function Fleet() {
             <div className="val">{s ? compact(s.inputTokensMtd + s.outputTokensMtd) : "—"}</div>
             <div className="sub">{s ? `${compact(s.inputTokensMtd)} in · ${compact(s.outputTokensMtd)} out` : ""}</div>
           </div>
-          <div className="kpi alert">
+          <div className={`kpi${(alerts.data?.alerts.length ?? 0) > 0 ? " alert" : ""}`}>
             <div className="lbl">Active Alerts</div>
             <div className="val">{alerts.data?.alerts.length ?? 0}</div>
             <div className="sub">{alerts.data?.alerts.filter((a) => a.severity === "critical").length ?? 0} critical</div>

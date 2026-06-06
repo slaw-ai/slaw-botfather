@@ -48,6 +48,8 @@ export const instances = pgTable(
     enrolledAt: timestamp("enrolled_at", { withTimezone: true }),
     lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
     lastSyncCursor: text("last_sync_cursor"),
+    /** version of the budget limit this instance reports as applied (de-dupe push) */
+    limitVersionAcked: integer("limit_version_acked").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -294,3 +296,39 @@ export const alerts = pgTable(
   },
   (t) => [index("alerts_status_idx").on(t.status)],
 );
+
+/* ───────────── budget limits (tower-governed config) ─────────────
+ * These are the FIRST tower-AUTHORITATIVE tables — config the admin sets here
+ * and that the tower pushes DOWN to instances (every other table flows
+ * instance→tower). Enterprise default (singleton) + optional per-instance
+ * override. Resolution cascades override→enterprise; see services/limits.ts.
+ */
+
+export const enterpriseLimits = pgTable("enterprise_limits", {
+  /** singleton — always 'default' */
+  key: text("key").primaryKey().default("default"),
+  costLimitCents: integer("cost_limit_cents"),
+  tokenLimit: bigint("token_limit", { mode: "number" }),
+  warnPercent: integer("warn_percent").notNull().default(80),
+  /** off | soft | hard */
+  mode: text("mode").notNull().default("soft"),
+  /** bumped on every edit so instances re-apply */
+  version: integer("version").notNull().default(1),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const instanceLimitOverrides = pgTable("instance_limit_overrides", {
+  instanceFk: uuid("instance_fk")
+    .primaryKey()
+    .references(() => instances.id),
+  costLimitCents: integer("cost_limit_cents"),
+  tokenLimit: bigint("token_limit", { mode: "number" }),
+  /** null = inherit enterprise */
+  warnPercent: integer("warn_percent"),
+  /** null = inherit enterprise; otherwise off | soft | hard */
+  mode: text("mode"),
+  version: integer("version").notNull().default(1),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

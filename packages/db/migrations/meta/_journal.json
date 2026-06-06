@@ -15,6 +15,13 @@
       "when": 1780709413643,
       "tag": "0001_solid_ben_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780719724179,
+      "tag": "0002_lean_agent_zero",
+      "breakpoints": true
     }
   ]
 }

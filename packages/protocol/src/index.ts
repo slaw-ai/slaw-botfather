@@ -67,6 +67,25 @@ export const enrollPollResponseSchema = z.object({
 });
 export type EnrollPollResponse = z.infer<typeof enrollPollResponseSchema>;
 
+/* ────────────────────────── budget limits (tower-governed) ────────────── */
+
+/**
+ * A centrally-governed budget limit pushed from the tower to an instance.
+ * Plan-aware: enforce on COST (cents) for metered/API runs, and on TOKENS for
+ * subscription runs (where cost is ~$0). Either ceiling may be null (no cap on
+ * that metric). The instance de-dupes pushes by `version` (monotonic).
+ */
+export const limitSpecSchema = z.object({
+  costLimitCents: z.number().int().nonnegative().nullable(),
+  tokenLimit: z.number().int().nonnegative().nullable(),
+  window: z.enum(["calendar_month_utc"]).default("calendar_month_utc"),
+  warnPercent: z.number().int().min(1).max(100).default(80),
+  mode: z.enum(["off", "soft", "hard"]).default("soft"),
+  /** monotonic; the instance applies a push only when version > the stored one */
+  version: z.number().int().nonnegative(),
+});
+export type LimitSpec = z.infer<typeof limitSpecSchema>;
+
 /* ────────────────────────── directives (tower → instance back-channel) ── */
 
 export const directiveSchema = z.discriminatedUnion("kind", [
@@ -74,6 +93,8 @@ export const directiveSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("request_reconciliation") }),
   z.object({ kind: z.literal("request_live_stream"), durationSec: z.number().int().positive() }),
   z.object({ kind: z.literal("stop_live_stream") }),
+  // Push (or clear, with mode:"off") the effective budget limit for this instance.
+  z.object({ kind: z.literal("set_limits"), limit: limitSpecSchema }),
 ]);
 export type Directive = z.infer<typeof directiveSchema>;
 
@@ -95,6 +116,8 @@ export const heartbeatRequestSchema = z.object({
     monthCents: z.number().int().nonnegative(),
   }),
   lastEventCursor: z.string().nullable(),
+  /** version of the budget limit the instance has currently applied (de-dupe) */
+  appliedLimitVersion: z.number().int().nonnegative().optional(),
 });
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>;
 

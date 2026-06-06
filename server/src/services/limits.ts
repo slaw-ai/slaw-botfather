@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { BotfatherDb } from "@slaw-botfather/db";
-import { enterpriseLimits, instanceLimitOverrides } from "@slaw-botfather/db";
-import type { LimitSpec } from "@slaw/botfather-protocol";
+import { enterpriseLimits, instanceLimitOverrides, instances } from "@slaw-botfather/db";
+import type { Directive, LimitSpec } from "@slaw/botfather-protocol";
 
 const ENTERPRISE_KEY = "default";
 
@@ -194,4 +194,38 @@ export async function resolveLimits(db: BotfatherDb, instanceFk: string): Promis
     mode: ovr.mode ?? ent?.mode ?? "soft",
     version,
   };
+}
+
+/**
+ * Build the directive array to attach to a heartbeat/sync response for one
+ * instance. We push `set_limits` when the resolved version is ahead of what the
+ * instance has acked, OR while a limit is actively in force (mode != off) — the
+ * instance de-dupes cheaply by version, so an occasional re-send is harmless and
+ * self-heals a missed application. Returns [] when nothing needs sending.
+ */
+export async function buildLimitDirectives(
+  db: BotfatherDb,
+  instanceFk: string,
+  ackedVersion: number,
+): Promise<Directive[]> {
+  const spec = await resolveLimits(db, instanceFk);
+  // Push only when the resolved version is ahead of what the instance has
+  // applied. The instance echoes its applied version in the heartbeat, so once
+  // it acks we stop re-sending. (Clearing a limit bumps the version too, so a
+  // mode:"off" spec also propagates exactly once.)
+  if (spec.version <= ackedVersion) return [];
+  return [{ kind: "set_limits", limit: spec }];
+}
+
+/** Record the limit version an instance reports it has applied (de-dupe). */
+export async function recordAppliedLimitVersion(
+  db: BotfatherDb,
+  instanceFk: string,
+  appliedVersion: number | undefined,
+): Promise<void> {
+  if (appliedVersion === undefined) return;
+  await db
+    .update(instances)
+    .set({ limitVersionAcked: appliedVersion, updatedAt: new Date() })
+    .where(eq(instances.id, instanceFk));
 }

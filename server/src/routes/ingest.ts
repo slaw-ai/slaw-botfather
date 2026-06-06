@@ -17,6 +17,7 @@ import { instances, machines } from "@slaw-botfather/db";
 import { enroll, pollEnrollment } from "../services/enrollment.js";
 import { applySyncBatch, linkSquadFks } from "../services/sync.js";
 import { reconcile } from "../services/reconciliation.js";
+import { buildLimitDirectives, recordAppliedLimitVersion } from "../services/limits.js";
 import { instanceAuth, ingestRateLimit, authedInstance } from "../middleware/instance-auth.js";
 import type { BotfatherConfig } from "../config.js";
 
@@ -88,7 +89,12 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     }
     const inst = authedInstance(res);
     await touchLiveness(inst.id, inst.machineFk);
-    const body: HeartbeatResponse = { acknowledged: true, directives: [] };
+    // record the limit version the instance reports applied, then push the
+    // effective limit if it's still behind.
+    await recordAppliedLimitVersion(db, inst.id, parsed.data.appliedLimitVersion);
+    const acked = parsed.data.appliedLimitVersion ?? inst.limitVersionAcked;
+    const directives = await buildLimitDirectives(db, inst.id, acked);
+    const body: HeartbeatResponse = { acknowledged: true, directives };
     res.json(body);
   });
 
@@ -102,10 +108,11 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     const outcome = await applySyncBatch(db, inst.id, parsed.data);
     if (parsed.data.upserts.length > 0) await linkSquadFks(db, inst.id);
     await touchLiveness(inst.id, inst.machineFk);
+    const directives = await buildLimitDirectives(db, inst.id, inst.limitVersionAcked);
     const body: SyncResponse = {
       acknowledgedCursor: parsed.data.batchCursor,
       accepted: outcome,
-      directives: [],
+      directives,
     };
     res.json(body);
   });

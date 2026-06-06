@@ -15,6 +15,8 @@ import {
   upsertOverride,
   clearOverride,
   resolveLimits,
+  buildLimitDirectives,
+  recordAppliedLimitVersion,
 } from "../src/services/limits.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -120,5 +122,46 @@ describe("limit resolution cascade", () => {
     const all = await db.select().from(schema.enterpriseLimits);
     expect(all).toHaveLength(1);
     expect((await getEnterpriseLimits(db))?.costLimitCents).toBe(2);
+  });
+});
+
+describe("directive emission + version de-dupe", () => {
+  it("pushes set_limits when the instance is behind, then stops once acked", async () => {
+    await upsertEnterpriseLimits(db, { costLimitCents: 50_000, tokenLimit: null, mode: "soft" });
+    const spec = await resolveLimits(db, instanceFk);
+
+    // instance has applied nothing yet (acked 0) → directive is pushed
+    const first = await buildLimitDirectives(db, instanceFk, 0);
+    expect(first).toHaveLength(1);
+    expect(first[0]).toMatchObject({ kind: "set_limits" });
+    expect((first[0] as { limit: { version: number } }).limit.version).toBe(spec.version);
+
+    // instance reports it applied that version → tower records it
+    await recordAppliedLimitVersion(db, instanceFk, spec.version);
+    const [inst] = await db.select().from(schema.instances).where(eq(schema.instances.id, instanceFk));
+    expect(inst.limitVersionAcked).toBe(spec.version);
+
+    // now the instance is caught up → nothing more to push
+    const second = await buildLimitDirectives(db, instanceFk, spec.version);
+    expect(second).toHaveLength(0);
+  });
+
+  it("re-pushes after an edit bumps the version", async () => {
+    await upsertEnterpriseLimits(db, { costLimitCents: 10_000, tokenLimit: null });
+    const v1 = (await resolveLimits(db, instanceFk)).version;
+    await recordAppliedLimitVersion(db, instanceFk, v1);
+    expect(await buildLimitDirectives(db, instanceFk, v1)).toHaveLength(0);
+
+    // admin edits the limit → version moves forward → push again
+    await upsertEnterpriseLimits(db, { costLimitCents: 20_000, tokenLimit: null });
+    const v2 = (await resolveLimits(db, instanceFk)).version;
+    expect(v2).toBeGreaterThan(v1);
+    const dirs = await buildLimitDirectives(db, instanceFk, v1);
+    expect(dirs).toHaveLength(1);
+    expect((dirs[0] as { limit: { costLimitCents: number } }).limit.costLimitCents).toBe(20_000);
+  });
+
+  it("emits nothing when no limit is configured", async () => {
+    expect(await buildLimitDirectives(db, instanceFk, 0)).toHaveLength(0);
   });
 });

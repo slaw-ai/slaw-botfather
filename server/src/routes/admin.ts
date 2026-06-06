@@ -14,6 +14,15 @@ import {
   issues,
 } from "@slaw-botfather/db";
 import { decideEnrollment, revokeInstance } from "../services/enrollment.js";
+import {
+  getEnterpriseLimits,
+  upsertEnterpriseLimits,
+  getOverride,
+  upsertOverride,
+  clearOverride,
+  resolveLimits,
+  type LimitMode,
+} from "../services/limits.js";
 import { rows } from "../services/sql-util.js";
 import {
   networkSummary,
@@ -308,6 +317,83 @@ export function adminRouter(db: BotfatherDb): Router {
       .where(and(eq(alerts.id, req.params.id), eq(alerts.status, "active")))
       .returning({ id: alerts.id });
     res.status(updated.length ? 200 : 404).json({ ok: updated.length > 0 });
+  });
+
+  /* ── budget limits (tower-governed) ── */
+
+  // Parse a nullable nonnegative integer ceiling from the request body.
+  const ceiling = (v: unknown): number | null | undefined => {
+    if (v === null) return null;
+    if (v === undefined) return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+  };
+  const parseMode = (v: unknown): LimitMode | undefined =>
+    v === "off" || v === "soft" || v === "hard" ? v : undefined;
+
+  r.get("/enterprise-limits", async (_req, res) => {
+    res.json({ enterprise: await getEnterpriseLimits(db) });
+  });
+
+  r.put("/enterprise-limits", async (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const cost = ceiling(b.costLimitCents);
+    const tok = ceiling(b.tokenLimit);
+    if (cost === undefined && b.costLimitCents !== undefined) {
+      res.status(400).json({ error: "invalid costLimitCents" });
+      return;
+    }
+    const row = await upsertEnterpriseLimits(db, {
+      costLimitCents: cost ?? null,
+      tokenLimit: tok ?? null,
+      warnPercent: typeof b.warnPercent === "number" ? b.warnPercent : undefined,
+      mode: parseMode(b.mode),
+      updatedBy: typeof b.updatedBy === "string" ? b.updatedBy : "admin",
+    });
+    res.json({ enterprise: row });
+  });
+
+  // Effective + override + enterprise for one instance.
+  r.get("/instances/:id/limits", async (req, res) => {
+    const [inst] = await db.select().from(instances).where(eq(instances.id, req.params.id));
+    if (!inst) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    res.json({
+      effective: await resolveLimits(db, inst.id),
+      override: await getOverride(db, inst.id),
+      enterprise: await getEnterpriseLimits(db),
+      appliedVersion: inst.limitVersionAcked,
+    });
+  });
+
+  r.put("/instances/:id/limits", async (req, res) => {
+    const [inst] = await db.select().from(instances).where(eq(instances.id, req.params.id));
+    if (!inst) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const row = await upsertOverride(db, inst.id, {
+      costLimitCents: ceiling(b.costLimitCents) ?? null,
+      tokenLimit: ceiling(b.tokenLimit) ?? null,
+      // warnPercent/mode null = inherit enterprise
+      warnPercent: b.warnPercent === null ? null : typeof b.warnPercent === "number" ? b.warnPercent : null,
+      mode: b.mode === null ? null : parseMode(b.mode) ?? null,
+      updatedBy: typeof b.updatedBy === "string" ? b.updatedBy : "admin",
+    });
+    res.json({ override: row, effective: await resolveLimits(db, inst.id) });
+  });
+
+  r.delete("/instances/:id/limits", async (req, res) => {
+    const [inst] = await db.select().from(instances).where(eq(instances.id, req.params.id));
+    if (!inst) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    await clearOverride(db, inst.id);
+    res.json({ ok: true, effective: await resolveLimits(db, inst.id) });
   });
 
   return r;

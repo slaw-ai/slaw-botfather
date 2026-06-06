@@ -389,51 +389,53 @@ export function InstanceDetail() {
                         close ✕
                       </span>
                     </div>
-                    <div className="g3" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
-                      <div>
-                        <div className="lbl">Role</div>
-                        <div className="mono">{a.role}</div>
-                      </div>
-                      <div>
-                        <div className="lbl">Adapter</div>
-                        <div className="mono">{a.adapterType}</div>
-                      </div>
-                      <div>
-                        <div className="lbl">Squad</div>
-                        <div>{a.squadName ?? a.squadLocalId}</div>
-                      </div>
-                      <div>
-                        <div className="lbl">Reports to</div>
-                        <div>{reportsTo ? reportsTo.name : a.reportsToLocalId ? a.reportsToLocalId : "—"}</div>
-                      </div>
-                      <div>
-                        <div className="lbl">Budget MTD</div>
-                        <div className="mono">
-                          {a.budgetMonthlyCents != null
-                            ? `${money(a.spentMonthlyCents)} / ${money(a.budgetMonthlyCents)}`
-                            : money(a.spentMonthlyCents)}
+                    <div className="panel-body">
+                      <div className="form-grid">
+                        <div className="field-read">
+                          <div className="field-cap">Role</div>
+                          <div className="mono">{a.role}</div>
+                        </div>
+                        <div className="field-read">
+                          <div className="field-cap">Adapter</div>
+                          <div className="mono">{a.adapterType}</div>
+                        </div>
+                        <div className="field-read">
+                          <div className="field-cap">Squad</div>
+                          <div>{a.squadName ?? a.squadLocalId}</div>
+                        </div>
+                        <div className="field-read">
+                          <div className="field-cap">Reports to</div>
+                          <div>{reportsTo ? reportsTo.name : a.reportsToLocalId ? a.reportsToLocalId : "—"}</div>
+                        </div>
+                        <div className="field-read">
+                          <div className="field-cap">Budget MTD</div>
+                          <div className="mono">
+                            {a.budgetMonthlyCents != null
+                              ? `${money(a.spentMonthlyCents)} / ${money(a.budgetMonthlyCents)}`
+                              : money(a.spentMonthlyCents)}
+                          </div>
+                        </div>
+                        <div className="field-read">
+                          <div className="field-cap">Updated</div>
+                          <div className="dim mono" style={{ fontSize: 12 }}>{relTime(a.updatedAt)} ago</div>
                         </div>
                       </div>
-                      <div>
-                        <div className="lbl">Updated</div>
-                        <div className="dim mono" style={{ fontSize: 12 }}>{relTime(a.updatedAt)} ago</div>
+                      <div className="field-read" style={{ marginTop: 16 }}>
+                        <div className="field-cap">Instructions</div>
+                        {a.capabilities && a.capabilities.trim() ? (
+                          <pre
+                            className="code"
+                            style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto", margin: 0, fontSize: 12 }}
+                          >
+                            {a.capabilities}
+                          </pre>
+                        ) : (
+                          <div className="dim" style={{ fontSize: 12 }}>No instructions reported for this agent.</div>
+                        )}
                       </div>
-                    </div>
-                    <div className="lbl">Instructions</div>
-                    {a.capabilities && a.capabilities.trim() ? (
-                      <pre
-                        className="code"
-                        style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto", margin: "4px 0 0", fontSize: 12 }}
-                      >
-                        {a.capabilities}
-                      </pre>
-                    ) : (
-                      <div className="empty" style={{ marginTop: 4 }}>
-                        No instructions reported for this agent.
+                      <div className="dim" style={{ fontSize: 11, marginTop: 16 }}>
+                        Read-only. Adapter credentials &amp; runtime config stay on the instance and are never synced to the tower.
                       </div>
-                    )}
-                    <div className="dim" style={{ fontSize: 11, marginTop: 8 }}>
-                      Read-only. Adapter credentials &amp; runtime config stay on the instance and are never synced to the tower.
                     </div>
                   </div>
                 );

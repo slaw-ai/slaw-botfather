@@ -66,6 +66,7 @@ export function Shell() {
         <div className="nav-sec">Govern</div>
         <nav className="nav">
           {link("/cost", "◫", "Cost Analytics")}
+          {link("/limits", "◎", "Budgets & Limits")}
           {link("/admin", "⚿", "Approvals & Admin", counts.approvals)}
         </nav>
         <div className="side-foot">

@@ -9,6 +9,7 @@ import { InstanceDetail } from "./pages/InstanceDetail.tsx";
 import { CostAnalytics } from "./pages/CostAnalytics.tsx";
 import { Alerts } from "./pages/Alerts.tsx";
 import { Admin } from "./pages/Admin.tsx";
+import { Limits } from "./pages/Limits.tsx";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { path: "/fleet", element: <Fleet /> },
       { path: "/instances/:id", element: <InstanceDetail /> },
       { path: "/cost", element: <CostAnalytics /> },
+      { path: "/limits", element: <Limits /> },
       { path: "/alerts", element: <Alerts /> },
       { path: "/admin", element: <Admin /> },
     ],

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { api, money, compact } from "../api.ts";
+import { api, money, compact, type LimitMode, type LimitInput } from "../api.ts";
 import { useFetch } from "../useFetch.ts";
 import { ThemeButton } from "../Shell.tsx";
+
+const LIMIT_MODE_PILL: Record<LimitMode, string> = { off: "dim", soft: "warn", hard: "crit" };
 
 const EMPTY_TOKENS = {
   inputTokens: 0,
@@ -146,6 +148,8 @@ export function InstanceDetail() {
             <div className="sub mono" style={{ fontSize: 10 }}>{(instance.machineId ?? "").slice(0, 18)}…</div>
           </div>
         </div>
+
+        <LimitsPanel instanceId={id} spendMtdCents={instance.spendMtdCents} />
 
         <div className="row cols-2-1" style={{ display: "grid", gap: 12 }}>
           <div className="panel">
@@ -486,5 +490,166 @@ export function InstanceDetail() {
         </div>
       </div>
     </>
+  );
+}
+
+const centsToDollars = (c: number | null) => (c == null ? "" : (c / 100).toString());
+const dollarsToCents = (s: string): number | null => {
+  const t = s.trim();
+  if (t === "") return null;
+  const n = Number(t);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
+};
+const numOrNull = (s: string): number | null => {
+  const t = s.trim();
+  if (t === "") return null;
+  const n = Number(t);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+};
+
+/** Read + edit the tower-governed budget limit for this instance (override or inherited). */
+function LimitsPanel({ instanceId, spendMtdCents }: { instanceId: string; spendMtdCents: number }) {
+  const q = useFetch(() => api.instanceLimits(instanceId), [instanceId], 30_000);
+  const [editing, setEditing] = useState(false);
+  const [cost, setCost] = useState("");
+  const [tokens, setTokens] = useState("");
+  const [warn, setWarn] = useState("");
+  const [mode, setMode] = useState<LimitMode | "inherit">("inherit");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const ovr = q.data?.override ?? null;
+  const eff = q.data?.effective;
+
+  useEffect(() => {
+    if (ovr) {
+      setCost(centsToDollars(ovr.costLimitCents));
+      setTokens(ovr.tokenLimit == null ? "" : String(ovr.tokenLimit));
+      setWarn(ovr.warnPercent == null ? "" : String(ovr.warnPercent));
+      setMode(ovr.mode ?? "inherit");
+    }
+  }, [ovr]);
+
+  if (!eff) {
+    return (
+      <div className="panel" style={{ marginBottom: 12 }}>
+        <div className="panel-h"><h2>Budget limit</h2></div>
+        <div className="loading">loading limit…</div>
+      </div>
+    );
+  }
+
+  const save = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const body: LimitInput = {
+        costLimitCents: dollarsToCents(cost),
+        tokenLimit: numOrNull(tokens),
+        warnPercent: warn.trim() === "" ? null : numOrNull(warn),
+        mode: mode === "inherit" ? null : mode,
+      };
+      await api.setInstanceLimits(instanceId, body);
+      setMsg("Override saved — pushes to the instance on its next heartbeat.");
+      setEditing(false);
+      await q.reload();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clear = async () => {
+    if (!confirm("Clear this instance's override? It will revert to the enterprise default.")) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.clearInstanceLimits(instanceId);
+      setMsg("Override cleared — reverted to the enterprise default.");
+      setEditing(false);
+      await q.reload();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Clear failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pctCost = eff.costLimitCents && eff.costLimitCents > 0 ? Math.round((spendMtdCents / eff.costLimitCents) * 100) : null;
+
+  return (
+    <div className="panel" style={{ marginBottom: 12 }}>
+      <div className="panel-h">
+        <h2>Budget limit</h2>
+        <span className={`pill ${LIMIT_MODE_PILL[eff.mode]}`} style={{ marginLeft: 8 }}>
+          {eff.mode === "off" ? "Off" : eff.mode === "soft" ? "Soft (warn)" : "Hard (block)"}
+        </span>
+        <span className="tag" style={{ marginLeft: 8, fontSize: 10 }}>{ovr ? "override" : "inherited"}</span>
+        <span className="dim" style={{ fontSize: 11, marginLeft: "auto" }}>
+          tower cap · local squad/agent budgets can be stricter
+        </span>
+      </div>
+
+      {!editing ? (
+        <>
+          <div className="g3" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
+            <div>
+              <div className="lbl">Cost ceiling / mo</div>
+              <div className="mono">{eff.costLimitCents == null ? "— no cap" : money(eff.costLimitCents)}</div>
+              {pctCost != null ? <div className="dim" style={{ fontSize: 11 }}>{money(spendMtdCents)} used · {pctCost}%</div> : null}
+            </div>
+            <div>
+              <div className="lbl">Token ceiling / mo</div>
+              <div className="mono">{eff.tokenLimit == null ? "— no cap" : compact(eff.tokenLimit)}</div>
+              <div className="dim" style={{ fontSize: 11 }}>used for subscription runs</div>
+            </div>
+            <div>
+              <div className="lbl">Warn at</div>
+              <div className="mono">{eff.warnPercent}%</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn" onClick={() => setEditing(true)} disabled={busy}>
+              {ovr ? "Edit override" : "Set override"}
+            </button>
+            {ovr ? (
+              <button className="btn ghost" onClick={clear} disabled={busy}>Clear override</button>
+            ) : null}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="g3" style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
+            <label className="lbl">
+              Cost ceiling / mo (USD)
+              <input className="inp" inputMode="decimal" placeholder="inherit / no cap" value={cost} onChange={(e) => setCost(e.target.value)} />
+            </label>
+            <label className="lbl">
+              Token ceiling / mo
+              <input className="inp" inputMode="numeric" placeholder="inherit / no cap" value={tokens} onChange={(e) => setTokens(e.target.value)} />
+            </label>
+            <label className="lbl">
+              Warn at % (blank = inherit)
+              <input className="inp" inputMode="numeric" placeholder="inherit" value={warn} onChange={(e) => setWarn(e.target.value)} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <label className="lbl" style={{ maxWidth: 220 }}>
+              Enforcement
+              <select className="inp" value={mode} onChange={(e) => setMode(e.target.value as LimitMode | "inherit")}>
+                <option value="inherit">Inherit enterprise</option>
+                <option value="off">Off</option>
+                <option value="soft">Soft — warn</option>
+                <option value="hard">Hard — block</option>
+              </select>
+            </label>
+            <button className="btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save override"}</button>
+            <button className="btn ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</button>
+          </div>
+        </>
+      )}
+      {msg && <p className="dim" style={{ fontSize: 12, marginTop: 8 }}>{msg}</p>}
+    </div>
   );
 }

@@ -17,6 +17,22 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function put<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+async function del<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 /* ── types (mirror server responses) ── */
 export interface FleetInstance {
   id: string;
@@ -148,7 +164,59 @@ export const api = {
   autoApproveRules: () =>
     get<{ rules: { id: string; pattern: string; field: string; enabled: boolean }[] }>("/auto-approve-rules"),
   revoke: (id: string) => post<{ ok: boolean }>(`/instances/${id}/revoke`),
+
+  enterpriseLimits: () => get<{ enterprise: EnterpriseLimits | null }>("/enterprise-limits"),
+  setEnterpriseLimits: (body: LimitInput) => put<{ enterprise: EnterpriseLimits }>("/enterprise-limits", body),
+  instanceLimits: (id: string) =>
+    get<{
+      effective: LimitSpec;
+      override: InstanceLimitOverride | null;
+      enterprise: EnterpriseLimits | null;
+      appliedVersion: number;
+    }>(`/instances/${id}/limits`),
+  setInstanceLimits: (id: string, body: LimitInput) =>
+    put<{ override: InstanceLimitOverride; effective: LimitSpec }>(`/instances/${id}/limits`, body),
+  clearInstanceLimits: (id: string) =>
+    del<{ ok: boolean; effective: LimitSpec }>(`/instances/${id}/limits`),
 };
+
+export type LimitMode = "off" | "soft" | "hard";
+
+export interface LimitSpec {
+  costLimitCents: number | null;
+  tokenLimit: number | null;
+  window: string;
+  warnPercent: number;
+  mode: LimitMode;
+  version: number;
+}
+
+export interface EnterpriseLimits {
+  costLimitCents: number | null;
+  tokenLimit: number | null;
+  warnPercent: number;
+  mode: LimitMode;
+  version: number;
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
+export interface InstanceLimitOverride {
+  costLimitCents: number | null;
+  tokenLimit: number | null;
+  warnPercent: number | null;
+  mode: LimitMode | null;
+  version: number;
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
+export interface LimitInput {
+  costLimitCents: number | null;
+  tokenLimit: number | null;
+  warnPercent?: number | null;
+  mode?: LimitMode | null;
+}
 
 export const money = (cents: number | null | undefined) => {
   const c = Number(cents);

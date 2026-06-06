@@ -8,3 +8,18 @@ button.theme-btn, .btn { cursor: pointer; }
 .row.cols-2-1 { grid-template-columns: 2fr 1fr; }
 .row.cols-1-1 { grid-template-columns: 1fr 1fr; }
 .row.cols-22-1 { grid-template-columns: 2.2fr 1fr; }
+
+/* form controls (Budgets & Limits, instance limit override) */
+label.lbl {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .6px;
+}
+.inp {
+  background: var(--panel2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 9px; font: 13px var(--mono); width: 100%;
+  text-transform: none; letter-spacing: 0;
+}
+.inp:focus { outline: none; border-color: var(--accent); }
+select.inp { font-family: var(--sans); cursor: pointer; }

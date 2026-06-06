@@ -70,7 +70,6 @@ describe("limit resolution cascade", () => {
     expect(spec.tokenLimit).toBe(10_000_000);
     expect(spec.warnPercent).toBe(75);
     expect(spec.mode).toBe("soft");
-    expect(spec.version).toBeGreaterThan(0);
   });
 
   it("a per-instance override wins; null fields inherit the enterprise default", async () => {
@@ -94,15 +93,14 @@ describe("limit resolution cascade", () => {
     expect(spec.mode).toBe("hard"); // overridden
   });
 
-  it("bumps version on every edit so instances re-apply", async () => {
-    const v1 = (await upsertEnterpriseLimits(db, { costLimitCents: 100, tokenLimit: null })).version;
-    const v2 = (await upsertEnterpriseLimits(db, { costLimitCents: 200, tokenLimit: null })).version;
-    expect(v2).toBeGreaterThan(v1);
-    // an override edit also moves the resolved version forward
-    const before = (await resolveLimits(db, instanceFk)).version;
-    await upsertOverride(db, instanceFk, { costLimitCents: 50, tokenLimit: null });
-    const after = (await resolveLimits(db, instanceFk)).version;
-    expect(after).toBeGreaterThan(before);
+  it("issues a higher version each time the effective content changes", async () => {
+    // version is owned by the instance's monotonic issued counter, bumped by
+    // buildLimitDirectives when content changes — not by resolveLimits alone.
+    await upsertEnterpriseLimits(db, { costLimitCents: 100, tokenLimit: null, mode: "soft" });
+    const v1 = (await buildLimitDirectives(db, instanceFk, 0))[0] as { limit: { version: number } };
+    await upsertEnterpriseLimits(db, { costLimitCents: 200, tokenLimit: null, mode: "soft" });
+    const v2 = (await buildLimitDirectives(db, instanceFk, v1.limit.version))[0] as { limit: { version: number } };
+    expect(v2.limit.version).toBeGreaterThan(v1.limit.version);
   });
 
   it("clearing an override reverts the instance to the enterprise default", async () => {
@@ -114,6 +112,26 @@ describe("limit resolution cascade", () => {
     const spec = await resolveLimits(db, instanceFk);
     expect(spec.costLimitCents).toBe(50_000);
     expect(spec.mode).toBe("soft");
+  });
+
+  it("REGRESSION: clearing a hard override propagates with a HIGHER version (never backwards)", async () => {
+    // Repro of the reported bug: a hard override is applied, then cleared with
+    // no enterprise default → must push an "off" spec whose version exceeds the
+    // version the instance already acked, so SLAW stops enforcing.
+    await upsertOverride(db, instanceFk, { costLimitCents: null, tokenLimit: 2_000_000, mode: "hard" });
+    const pushed = (await buildLimitDirectives(db, instanceFk, 0))[0] as { limit: { version: number; mode: string } };
+    expect(pushed.limit.mode).toBe("hard");
+    const ackedV = pushed.limit.version;
+    await recordAppliedLimitVersion(db, instanceFk, ackedV);
+    expect(await buildLimitDirectives(db, instanceFk, ackedV)).toHaveLength(0); // caught up
+
+    // admin clears the override (DELETE) → nothing configured → "off"
+    await clearOverride(db, instanceFk);
+    const cleared = await buildLimitDirectives(db, instanceFk, ackedV);
+    expect(cleared).toHaveLength(1); // <-- the bug was: this was [] (version went backwards)
+    const spec = (cleared[0] as { limit: { version: number; mode: string } }).limit;
+    expect(spec.mode).toBe("off");
+    expect(spec.version).toBeGreaterThan(ackedV);
   });
 
   it("persists the enterprise singleton (single row, upsert not insert)", async () => {
@@ -128,37 +146,37 @@ describe("limit resolution cascade", () => {
 describe("directive emission + version de-dupe", () => {
   it("pushes set_limits when the instance is behind, then stops once acked", async () => {
     await upsertEnterpriseLimits(db, { costLimitCents: 50_000, tokenLimit: null, mode: "soft" });
-    const spec = await resolveLimits(db, instanceFk);
 
     // instance has applied nothing yet (acked 0) → directive is pushed
     const first = await buildLimitDirectives(db, instanceFk, 0);
     expect(first).toHaveLength(1);
     expect(first[0]).toMatchObject({ kind: "set_limits" });
-    expect((first[0] as { limit: { version: number } }).limit.version).toBe(spec.version);
+    const v = (first[0] as { limit: { version: number } }).limit.version;
+    expect(v).toBeGreaterThan(0);
 
     // instance reports it applied that version → tower records it
-    await recordAppliedLimitVersion(db, instanceFk, spec.version);
+    await recordAppliedLimitVersion(db, instanceFk, v);
     const [inst] = await db.select().from(schema.instances).where(eq(schema.instances.id, instanceFk));
-    expect(inst.limitVersionAcked).toBe(spec.version);
+    expect(inst.limitVersionAcked).toBe(v);
 
-    // now the instance is caught up → nothing more to push
-    const second = await buildLimitDirectives(db, instanceFk, spec.version);
+    // now the instance is caught up → nothing more to push (content unchanged)
+    const second = await buildLimitDirectives(db, instanceFk, v);
     expect(second).toHaveLength(0);
   });
 
   it("re-pushes after an edit bumps the version", async () => {
-    await upsertEnterpriseLimits(db, { costLimitCents: 10_000, tokenLimit: null });
-    const v1 = (await resolveLimits(db, instanceFk)).version;
+    await upsertEnterpriseLimits(db, { costLimitCents: 10_000, tokenLimit: null, mode: "soft" });
+    const v1 = ((await buildLimitDirectives(db, instanceFk, 0))[0] as { limit: { version: number } }).limit.version;
     await recordAppliedLimitVersion(db, instanceFk, v1);
     expect(await buildLimitDirectives(db, instanceFk, v1)).toHaveLength(0);
 
-    // admin edits the limit → version moves forward → push again
-    await upsertEnterpriseLimits(db, { costLimitCents: 20_000, tokenLimit: null });
-    const v2 = (await resolveLimits(db, instanceFk)).version;
-    expect(v2).toBeGreaterThan(v1);
+    // admin edits the limit → content changes → version moves forward → push again
+    await upsertEnterpriseLimits(db, { costLimitCents: 20_000, tokenLimit: null, mode: "soft" });
     const dirs = await buildLimitDirectives(db, instanceFk, v1);
     expect(dirs).toHaveLength(1);
-    expect((dirs[0] as { limit: { costLimitCents: number } }).limit.costLimitCents).toBe(20_000);
+    const limit = (dirs[0] as { limit: { costLimitCents: number; version: number } }).limit;
+    expect(limit.costLimitCents).toBe(20_000);
+    expect(limit.version).toBeGreaterThan(v1);
   });
 
   it("emits nothing when no limit is configured", async () => {

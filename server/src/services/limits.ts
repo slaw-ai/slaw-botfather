@@ -169,11 +169,16 @@ export async function resolveLimits(db: BotfatherDb, instanceFk: string): Promis
   const ent = await getEnterpriseLimits(db);
   const ovr = await getOverride(db, instanceFk);
 
-  if (!ent && !ovr) return offSpec(0);
+  // Resolve CONTENT only; the directive version is owned by the instance's
+  // monotonic limitVersionIssued counter (see buildLimitDirectives) so that
+  // clearing an override can never make the version go backwards. We stamp the
+  // current issued version here for read APIs; buildLimitDirectives restamps it
+  // when content changes.
+  const issued = await issuedVersion(db, instanceFk);
 
-  // version: sum so either edit moves it forward (both monotonic per row)
-  const version = (ent?.version ?? 0) + (ovr?.version ?? 0);
-
+  if (!ent && !ovr) {
+    return { ...offSpec(issued) };
+  }
   if (!ovr) {
     return {
       costLimitCents: ent!.costLimitCents,
@@ -181,10 +186,9 @@ export async function resolveLimits(db: BotfatherDb, instanceFk: string): Promis
       window: "calendar_month_utc",
       warnPercent: ent!.warnPercent,
       mode: ent!.mode,
-      version,
+      version: issued,
     };
   }
-
   // override present: non-null override fields win; null inherits enterprise
   return {
     costLimitCents: ovr.costLimitCents ?? ent?.costLimitCents ?? null,
@@ -192,8 +196,22 @@ export async function resolveLimits(db: BotfatherDb, instanceFk: string): Promis
     window: "calendar_month_utc",
     warnPercent: ovr.warnPercent ?? ent?.warnPercent ?? 80,
     mode: ovr.mode ?? ent?.mode ?? "soft",
-    version,
+    version: issued,
   };
+}
+
+/** Read the instance's current monotonic issued version (0 if none yet). */
+async function issuedVersion(db: BotfatherDb, instanceFk: string): Promise<number> {
+  const [row] = await db
+    .select({ v: instances.limitVersionIssued })
+    .from(instances)
+    .where(eq(instances.id, instanceFk));
+  return row?.v ?? 0;
+}
+
+/** Stable string of the limit CONTENT (everything except version) for change-detection. */
+function contentKey(spec: LimitSpec): string {
+  return JSON.stringify([spec.costLimitCents, spec.tokenLimit, spec.window, spec.warnPercent, spec.mode]);
 }
 
 /**
@@ -208,12 +226,41 @@ export async function buildLimitDirectives(
   instanceFk: string,
   ackedVersion: number,
 ): Promise<Directive[]> {
+  const [inst] = await db
+    .select({
+      issued: instances.limitVersionIssued,
+      content: instances.limitIssuedContent,
+    })
+    .from(instances)
+    .where(eq(instances.id, instanceFk));
+  if (!inst) return [];
+
   const spec = await resolveLimits(db, instanceFk);
-  // Push only when the resolved version is ahead of what the instance has
-  // applied. The instance echoes its applied version in the heartbeat, so once
-  // it acks we stop re-sending. (Clearing a limit bumps the version too, so a
-  // mode:"off" spec also propagates exactly once.)
-  if (spec.version <= ackedVersion) return [];
+  const key = contentKey(spec);
+
+  // Never issued anything AND nothing is configured (off) → genuinely nothing
+  // to push. This avoids a spurious "off" directive to instances that have
+  // never had a limit. (Once a real limit has been issued, a later clear DOES
+  // push "off" — see below.)
+  const neverIssued = (inst.issued ?? 0) === 0 && inst.content == null;
+  if (neverIssued && spec.mode === "off") return [];
+
+  // If the effective CONTENT changed since we last issued (including a clear
+  // that flips back to "off"), bump the monotonic issued version and persist
+  // the new content. This version never decreases, so a cleared limit always
+  // propagates with a version higher than what the instance acked.
+  let issued = inst.issued ?? 0;
+  if (inst.content !== key) {
+    issued = issued + 1;
+    await db
+      .update(instances)
+      .set({ limitVersionIssued: issued, limitIssuedContent: key, updatedAt: new Date() })
+      .where(eq(instances.id, instanceFk));
+  }
+  spec.version = issued;
+
+  // Push only when the instance hasn't yet applied this issued version.
+  if (issued <= ackedVersion) return [];
   return [{ kind: "set_limits", limit: spec }];
 }
 

@@ -50,6 +50,13 @@ export const instances = pgTable(
     lastSyncCursor: text("last_sync_cursor"),
     /** version of the budget limit this instance reports as applied (de-dupe push) */
     limitVersionAcked: integer("limit_version_acked").notNull().default(0),
+    /** monotonic version the tower has issued for this instance's effective
+     * limit; bumped only when the resolved spec's CONTENT changes. Never
+     * decreases (unlike summing row versions), so clearing an override still
+     * propagates "off" with a higher version. */
+    limitVersionIssued: integer("limit_version_issued").notNull().default(0),
+    /** serialized last-issued spec content, to detect a real change */
+    limitIssuedContent: text("limit_issued_content"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -68,6 +68,18 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
   const auth = instanceAuth(db);
   const limit = ingestRateLimit(config.ingestRateLimitPerMin);
 
+  // Any authenticated ingest call (heartbeat, sync, manifest) is proof the
+  // instance is alive — refresh liveness so a busy instance that mostly syncs
+  // isn't swept to "offline" between heartbeats. Cheap; runs per request.
+  const touchLiveness = async (instanceId: string, machineFk: string) => {
+    const now = new Date();
+    await db
+      .update(instances)
+      .set({ status: "ok", lastHeartbeatAt: now, updatedAt: now })
+      .where(eq(instances.id, instanceId));
+    await db.update(machines).set({ lastSeen: now }).where(eq(machines.id, machineFk));
+  };
+
   r.post("/heartbeat", auth, limit, async (req, res) => {
     const parsed = heartbeatRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -75,12 +87,7 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
       return;
     }
     const inst = authedInstance(res);
-    const now = new Date();
-    await db
-      .update(instances)
-      .set({ status: "ok", lastHeartbeatAt: now, updatedAt: now })
-      .where(eq(instances.id, inst.id));
-    await db.update(machines).set({ lastSeen: now }).where(eq(machines.id, inst.machineFk));
+    await touchLiveness(inst.id, inst.machineFk);
     const body: HeartbeatResponse = { acknowledged: true, directives: [] };
     res.json(body);
   });
@@ -94,6 +101,7 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     const inst = authedInstance(res);
     const outcome = await applySyncBatch(db, inst.id, parsed.data);
     if (parsed.data.upserts.length > 0) await linkSquadFks(db, inst.id);
+    await touchLiveness(inst.id, inst.machineFk);
     const body: SyncResponse = {
       acknowledgedCursor: parsed.data.batchCursor,
       accepted: outcome,
@@ -109,6 +117,7 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
       return;
     }
     const inst = authedInstance(res);
+    await touchLiveness(inst.id, inst.machineFk);
     const result: ManifestResponse = await reconcile(db, inst.id, parsed.data);
     res.json(result);
   });

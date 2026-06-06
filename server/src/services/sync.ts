@@ -121,7 +121,12 @@ async function applyUpsert(db: BotfatherDb, instanceFk: string, u: EntityUpsert)
 export async function applyFact(db: BotfatherDb, instanceFk: string, f: FactEvent): Promise<boolean> {
   switch (f.type) {
     case "cost_event": {
-      const res = await db
+      // Upsert (not insert-only): a cost_event's tokens/cost may be re-sent by
+      // the instance if they were 0/stale on an earlier sync (e.g. usage
+      // attached after the row was first observed). Keyed on (instanceFk,
+      // localId); the numeric/model fields are corrected on conflict so the
+      // tower's totals converge to the instance's authoritative values.
+      await db
         .insert(costFacts)
         .values({
           instanceFk,
@@ -140,9 +145,22 @@ export async function applyFact(db: BotfatherDb, instanceFk: string, f: FactEven
           costCents: f.costCents,
           occurredAt: new Date(f.occurredAt),
         })
-        .onConflictDoNothing()
-        .returning({ id: costFacts.id });
-      return res.length > 0;
+        .onConflictDoUpdate({
+          target: [costFacts.instanceFk, costFacts.localId],
+          set: {
+            provider: f.provider,
+            biller: f.biller,
+            billingType: f.billingType,
+            model: f.model,
+            inputTokens: f.inputTokens,
+            cachedInputTokens: f.cachedInputTokens,
+            outputTokens: f.outputTokens,
+            costCents: f.costCents,
+            occurredAt: new Date(f.occurredAt),
+          },
+        });
+      // always count as accepted; upsert has no cheap inserted-vs-updated signal
+      return true;
     }
     case "run_event": {
       const res = await db

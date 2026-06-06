@@ -118,11 +118,36 @@ export const agents = pgTable(
     role: text("role").notNull(),
     status: text("status").notNull(),
     adapterType: text("adapter_type").notNull(),
+    /** display title / job title (read-only metadata) */
+    title: text("title"),
+    /** free-text persona / operating instructions (read-only metadata) */
+    capabilities: text("capabilities"),
+    /** localId of the agent this one reports to, if any */
+    reportsToLocalId: text("reports_to_local_id"),
     budgetMonthlyCents: integer("budget_monthly_cents"),
     spentMonthlyCents: integer("spent_monthly_cents").notNull().default(0),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (t) => [uniqueIndex("agents_instance_local_uq").on(t.instanceFk, t.localId)],
+);
+
+/** Skills are squad-scoped in SLAW; the tower stores descriptors only (no markdown body). */
+export const squadSkills = pgTable(
+  "squad_skills",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    instanceFk: uuid("instance_fk").notNull().references(() => instances.id),
+    squadFk: uuid("squad_fk").references(() => squads.id),
+    localId: text("local_id").notNull(),
+    squadLocalId: text("squad_local_id").notNull(),
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    sourceType: text("source_type").notNull(),
+    trustLevel: text("trust_level").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex("squad_skills_instance_local_uq").on(t.instanceFk, t.localId)],
 );
 
 export const projects = pgTable(

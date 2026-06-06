@@ -4,6 +4,7 @@ import {
   instances,
   squads,
   agents,
+  squadSkills,
   projects,
   issues,
   costFacts,
@@ -55,6 +56,9 @@ async function applyUpsert(db: BotfatherDb, instanceFk: string, u: EntityUpsert)
           role: u.role,
           status: u.status,
           adapterType: u.adapterType,
+          title: u.title ?? null,
+          capabilities: u.capabilities ?? null,
+          reportsToLocalId: u.reportsToLocalId ?? null,
           budgetMonthlyCents: u.budgetMonthlyCents,
           spentMonthlyCents: u.spentMonthlyCents,
           updatedAt,
@@ -67,8 +71,38 @@ async function applyUpsert(db: BotfatherDb, instanceFk: string, u: EntityUpsert)
             role: u.role,
             status: u.status,
             adapterType: u.adapterType,
+            title: u.title ?? null,
+            capabilities: u.capabilities ?? null,
+            reportsToLocalId: u.reportsToLocalId ?? null,
             budgetMonthlyCents: u.budgetMonthlyCents,
             spentMonthlyCents: u.spentMonthlyCents,
+            updatedAt,
+          },
+        });
+      return;
+    case "squad_skill":
+      await db
+        .insert(squadSkills)
+        .values({
+          instanceFk,
+          localId: u.localId,
+          squadLocalId: u.squadLocalId,
+          key: u.key,
+          name: u.name,
+          description: u.description ?? null,
+          sourceType: u.sourceType,
+          trustLevel: u.trustLevel,
+          updatedAt,
+        })
+        .onConflictDoUpdate({
+          target: [squadSkills.instanceFk, squadSkills.localId],
+          set: {
+            squadLocalId: u.squadLocalId,
+            key: u.key,
+            name: u.name,
+            description: u.description ?? null,
+            sourceType: u.sourceType,
+            trustLevel: u.trustLevel,
             updatedAt,
           },
         });
@@ -255,5 +289,11 @@ export async function linkSquadFks(db: BotfatherDb, instanceFk: string): Promise
     FROM squads s
     WHERE p.instance_fk = ${instanceFk} AND s.instance_fk = p.instance_fk
       AND s.local_id = p.squad_local_id AND p.squad_fk IS DISTINCT FROM s.id
+  `);
+  await db.execute(sql`
+    UPDATE squad_skills sk SET squad_fk = s.id
+    FROM squads s
+    WHERE sk.instance_fk = ${instanceFk} AND s.instance_fk = sk.instance_fk
+      AND s.local_id = sk.squad_local_id AND sk.squad_fk IS DISTINCT FROM s.id
   `);
 }

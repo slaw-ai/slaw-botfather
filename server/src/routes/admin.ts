@@ -8,6 +8,7 @@ import {
   autoApproveRules,
   squads,
   agents,
+  squadSkills,
   costFacts,
   alerts,
   issues,
@@ -239,6 +240,54 @@ export function adminRouter(db: BotfatherDb): Router {
       .orderBy(desc(issues.updatedAt))
       .limit(500);
     res.json({ issues: rows });
+  });
+
+  /* ── agents for one instance (drill-down, read-only metadata) ── */
+  r.get("/instances/:id/agents", async (req, res) => {
+    const rows = await db
+      .select({
+        localId: agents.localId,
+        squadLocalId: agents.squadLocalId,
+        name: agents.name,
+        role: agents.role,
+        title: agents.title,
+        status: agents.status,
+        adapterType: agents.adapterType,
+        capabilities: agents.capabilities,
+        reportsToLocalId: agents.reportsToLocalId,
+        budgetMonthlyCents: agents.budgetMonthlyCents,
+        spentMonthlyCents: agents.spentMonthlyCents,
+        updatedAt: agents.updatedAt,
+        squadName: squads.name,
+      })
+      .from(agents)
+      .leftJoin(squads, eq(agents.squadFk, squads.id))
+      .where(eq(agents.instanceFk, req.params.id))
+      .orderBy(agents.squadLocalId, agents.name)
+      .limit(2000);
+    res.json({ agents: rows });
+  });
+
+  /* ── squad skills for one instance (squad-scoped, read-only metadata) ── */
+  r.get("/instances/:id/skills", async (req, res) => {
+    const rows = await db
+      .select({
+        localId: squadSkills.localId,
+        squadLocalId: squadSkills.squadLocalId,
+        key: squadSkills.key,
+        name: squadSkills.name,
+        description: squadSkills.description,
+        sourceType: squadSkills.sourceType,
+        trustLevel: squadSkills.trustLevel,
+        updatedAt: squadSkills.updatedAt,
+        squadName: squads.name,
+      })
+      .from(squadSkills)
+      .leftJoin(squads, eq(squadSkills.squadFk, squads.id))
+      .where(eq(squadSkills.instanceFk, req.params.id))
+      .orderBy(squadSkills.squadLocalId, squadSkills.name)
+      .limit(2000);
+    res.json({ skills: rows });
   });
 
   /* ── alerts ── */

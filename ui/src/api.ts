@@ -108,6 +108,38 @@ export const api = {
         squadName: string | null;
       }[];
     }>(`/instances/${id}/issues`),
+  instanceAgents: (id: string) =>
+    get<{
+      agents: {
+        localId: string;
+        squadLocalId: string;
+        name: string;
+        role: string;
+        title: string | null;
+        status: string;
+        adapterType: string;
+        capabilities: string | null;
+        reportsToLocalId: string | null;
+        budgetMonthlyCents: number | null;
+        spentMonthlyCents: number;
+        updatedAt: string;
+        squadName: string | null;
+      }[];
+    }>(`/instances/${id}/agents`),
+  instanceSkills: (id: string) =>
+    get<{
+      skills: {
+        localId: string;
+        squadLocalId: string;
+        key: string;
+        name: string;
+        description: string | null;
+        sourceType: string;
+        trustLevel: string;
+        updatedAt: string;
+        squadName: string | null;
+      }[];
+    }>(`/instances/${id}/skills`),
   alerts: (status = "active") => get<{ alerts: Alert[] }>(`/alerts?status=${status}`),
   acknowledgeAlert: (id: string) => post<{ ok: boolean }>(`/alerts/${id}/acknowledge`),
   approvals: () => get<{ pending: PendingEnrollment[] }>("/approvals"),

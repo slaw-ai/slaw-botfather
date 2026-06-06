@@ -31,18 +31,38 @@ function relTime(ts: string): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
+const AGENT_PILL: Record<string, string> = {
+  running: "ok",
+  active: "ok",
+  idle: "dim",
+  paused: "warn",
+  error: "crit",
+  offline: "dim",
+};
+
 export function InstanceDetail() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const [squadFilter, setSquadFilter] = useState<string | null>(null);
+  const [openAgent, setOpenAgent] = useState<string | null>(null);
   const { data, loading, reload } = useFetch(() => api.instance(id), [id], 15_000);
   const issuesQuery = useFetch(() => api.instanceIssues(id), [id], 15_000);
+  const agentsQuery = useFetch(() => api.instanceAgents(id), [id], 15_000);
+  const skillsQuery = useFetch(() => api.instanceSkills(id), [id], 60_000);
 
   if (loading) return <div className="loading">loading instance…</div>;
   if (!data) return <div className="empty">Instance not found.</div>;
 
   const allIssues = issuesQuery.data?.issues ?? [];
   const issues = squadFilter ? allIssues.filter((i) => i.squadLocalId === squadFilter) : allIssues;
+
+  const allAgents = agentsQuery.data?.agents ?? [];
+  const agentList = squadFilter ? allAgents.filter((a) => a.squadLocalId === squadFilter) : allAgents;
+  const agentByLocalId = (lid: string | null) =>
+    lid ? allAgents.find((a) => a.localId === lid) ?? null : null;
+
+  const allSkills = skillsQuery.data?.skills ?? [];
+  const skills = squadFilter ? allSkills.filter((s) => s.squadLocalId === squadFilter) : allSkills;
 
   const { instance } = data;
   const squads = data.squads ?? [];
@@ -131,7 +151,7 @@ export function InstanceDetail() {
           <div className="panel">
             <div className="panel-h">
               <h2>Squads</h2>
-              <span className="dim" style={{ fontSize: 11 }}>click a squad to filter issues</span>
+              <span className="dim" style={{ fontSize: 11 }}>click a squad to filter agents, skills &amp; issues</span>
             </div>
             {squads.length === 0 ? (
               <div className="empty">No squads reported yet.</div>
@@ -261,6 +281,197 @@ export function InstanceDetail() {
                     </td>
                     <td className="muted">{i.assigneeAgentLocalId ?? "—"}</td>
                     <td className="dim mono" style={{ fontSize: 11 }}>{relTime(i.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="panel" style={{ marginTop: 12 }}>
+          <div className="panel-h">
+            <h2>Agents</h2>
+            {squadFilter ? (
+              <span className="tag" style={{ cursor: "pointer" }} onClick={() => setSquadFilter(null)}>
+                {squads.find((s) => s.localId === squadFilter)?.name ?? squadFilter} ✕
+              </span>
+            ) : null}
+            <span className="dim" style={{ fontSize: 11, marginLeft: "auto" }}>
+              {agentList.length}
+              {squadFilter ? ` of ${allAgents.length}` : ""} · click an agent to view its instructions &amp; config (read-only)
+            </span>
+          </div>
+          {agentsQuery.loading ? (
+            <div className="loading">loading agents…</div>
+          ) : agentList.length === 0 ? (
+            <div className="empty">
+              {squadFilter ? "No agents in the selected squad." : "No agents reported by this instance."}
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Role</th>
+                  <th>Squad</th>
+                  <th>Status</th>
+                  <th>Adapter</th>
+                  <th className="r">Budget MTD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agentList.map((a) => {
+                  const open = openAgent === a.localId;
+                  return (
+                    <tr
+                      key={a.localId}
+                      className="click"
+                      style={open ? { background: "var(--accent-soft)" } : undefined}
+                      onClick={() => setOpenAgent(open ? null : a.localId)}
+                    >
+                      <td>
+                        <b>{a.name}</b>
+                        {a.title ? <span className="dim" style={{ fontSize: 11, marginLeft: 6 }}>{a.title}</span> : null}
+                      </td>
+                      <td className="muted">{a.role}</td>
+                      <td>
+                        <span className="tag">{a.squadName ?? a.squadLocalId}</span>
+                      </td>
+                      <td>
+                        <span className={`pill ${AGENT_PILL[a.status] ?? "dim"}`}>{a.status}</span>
+                      </td>
+                      <td className="mono" style={{ fontSize: 11 }}>{a.adapterType}</td>
+                      <td className="r mono">
+                        {a.budgetMonthlyCents != null
+                          ? `${money(a.spentMonthlyCents)} / ${money(a.budgetMonthlyCents)}`
+                          : money(a.spentMonthlyCents)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {openAgent
+            ? (() => {
+                const a = agentByLocalId(openAgent);
+                if (!a) return null;
+                const reportsTo = agentByLocalId(a.reportsToLocalId);
+                return (
+                  <div
+                    className="panel"
+                    style={{ marginTop: 12, borderColor: "var(--accent)", background: "var(--bg-2, transparent)" }}
+                  >
+                    <div className="panel-h">
+                      <h2 style={{ fontSize: 15 }}>
+                        {a.name}
+                        {a.title ? <span className="dim" style={{ fontSize: 12, marginLeft: 8 }}>{a.title}</span> : null}
+                      </h2>
+                      <span className={`pill ${AGENT_PILL[a.status] ?? "dim"}`} style={{ marginLeft: 8 }}>
+                        {a.status}
+                      </span>
+                      <span className="tag" style={{ cursor: "pointer", marginLeft: "auto" }} onClick={() => setOpenAgent(null)}>
+                        close ✕
+                      </span>
+                    </div>
+                    <div className="g3" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
+                      <div>
+                        <div className="lbl">Role</div>
+                        <div className="mono">{a.role}</div>
+                      </div>
+                      <div>
+                        <div className="lbl">Adapter</div>
+                        <div className="mono">{a.adapterType}</div>
+                      </div>
+                      <div>
+                        <div className="lbl">Squad</div>
+                        <div>{a.squadName ?? a.squadLocalId}</div>
+                      </div>
+                      <div>
+                        <div className="lbl">Reports to</div>
+                        <div>{reportsTo ? reportsTo.name : a.reportsToLocalId ? a.reportsToLocalId : "—"}</div>
+                      </div>
+                      <div>
+                        <div className="lbl">Budget MTD</div>
+                        <div className="mono">
+                          {a.budgetMonthlyCents != null
+                            ? `${money(a.spentMonthlyCents)} / ${money(a.budgetMonthlyCents)}`
+                            : money(a.spentMonthlyCents)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="lbl">Updated</div>
+                        <div className="dim mono" style={{ fontSize: 12 }}>{relTime(a.updatedAt)} ago</div>
+                      </div>
+                    </div>
+                    <div className="lbl">Instructions</div>
+                    {a.capabilities && a.capabilities.trim() ? (
+                      <pre
+                        className="code"
+                        style={{ whiteSpace: "pre-wrap", maxHeight: 320, overflow: "auto", margin: "4px 0 0", fontSize: 12 }}
+                      >
+                        {a.capabilities}
+                      </pre>
+                    ) : (
+                      <div className="empty" style={{ marginTop: 4 }}>
+                        No instructions reported for this agent.
+                      </div>
+                    )}
+                    <div className="dim" style={{ fontSize: 11, marginTop: 8 }}>
+                      Read-only. Adapter credentials &amp; runtime config stay on the instance and are never synced to the tower.
+                    </div>
+                  </div>
+                );
+              })()
+            : null}
+        </div>
+
+        <div className="panel" style={{ marginTop: 12 }}>
+          <div className="panel-h">
+            <h2>Skills</h2>
+            {squadFilter ? (
+              <span className="tag" style={{ cursor: "pointer" }} onClick={() => setSquadFilter(null)}>
+                {squads.find((s) => s.localId === squadFilter)?.name ?? squadFilter} ✕
+              </span>
+            ) : null}
+            <span className="dim" style={{ fontSize: 11, marginLeft: "auto" }}>
+              {skills.length}
+              {squadFilter ? ` of ${allSkills.length}` : ""} · squad-scoped library · descriptors only
+            </span>
+          </div>
+          {skillsQuery.loading ? (
+            <div className="loading">loading skills…</div>
+          ) : skills.length === 0 ? (
+            <div className="empty">
+              {squadFilter ? "No skills in the selected squad." : "No skills reported by this instance."}
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Skill</th>
+                  <th>Squad</th>
+                  <th>Description</th>
+                  <th>Source</th>
+                  <th>Trust</th>
+                </tr>
+              </thead>
+              <tbody>
+                {skills.map((sk) => (
+                  <tr key={sk.localId}>
+                    <td>
+                      <b>{sk.name}</b>
+                      <span className="dim mono" style={{ fontSize: 10, marginLeft: 6 }}>{sk.key}</span>
+                    </td>
+                    <td>
+                      <span className="tag">{sk.squadName ?? sk.squadLocalId}</span>
+                    </td>
+                    <td className="muted" style={{ maxWidth: 360 }}>{sk.description ?? "—"}</td>
+                    <td className="mono" style={{ fontSize: 11 }}>{sk.sourceType}</td>
+                    <td>
+                      <span className={`pill ${sk.trustLevel === "trusted" ? "ok" : "dim"}`}>{sk.trustLevel}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

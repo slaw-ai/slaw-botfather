@@ -154,10 +154,13 @@ describe("B0 exit demo: enroll → pending → approve → poll key → sync →
     expect(first.deduplicated).toBe(0);
     await linkSquadFks(db, instanceFk);
 
-    // replay the same batch — facts must dedupe, no double-counting
+    // replay the same batch — cost facts upsert on (instanceFk, localId), so a
+    // re-send is "accepted" (it self-heals token/cost values) but creates no
+    // duplicate row. The no-double-counting invariant is asserted by row count
+    // in the next test. Run/activity facts still dedupe via onConflictDoNothing.
     const replay = await applySyncBatch(db, instanceFk, batch);
-    expect(replay.facts).toBe(0);
-    expect(replay.deduplicated).toBe(1);
+    expect(replay.facts).toBe(1);
+    expect(replay.deduplicated).toBe(0);
 
     // squad fk linked on the agent
     const [ag] = await db.select().from(schema.agents).where(eq(schema.agents.localId, "ag-1"));

@@ -591,65 +591,68 @@ function LimitsPanel({ instanceId, spendMtdCents }: { instanceId: string; spendM
         </span>
       </div>
 
-      {!editing ? (
-        <>
-          <div className="g3" style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
-            <div>
-              <div className="lbl">Cost ceiling / mo</div>
-              <div className="mono">{eff.costLimitCents == null ? "— no cap" : money(eff.costLimitCents)}</div>
-              {pctCost != null ? <div className="dim" style={{ fontSize: 11 }}>{money(spendMtdCents)} used · {pctCost}%</div> : null}
+      <div className="panel-body">
+        {!editing ? (
+          <>
+            <div className="form-grid">
+              <div className="field-read">
+                <div className="field-cap">Cost ceiling / mo</div>
+                <div className="mono">{eff.costLimitCents == null ? "— no cap" : money(eff.costLimitCents)}</div>
+                {pctCost != null ? <div className="hint">{money(spendMtdCents)} used · {pctCost}%</div> : null}
+              </div>
+              <div className="field-read">
+                <div className="field-cap">Token ceiling / mo</div>
+                <div className="mono">{eff.tokenLimit == null ? "— no cap" : compact(eff.tokenLimit)}</div>
+                <div className="hint">Used for subscription runs</div>
+              </div>
+              <div className="field-read">
+                <div className="field-cap">Warn at</div>
+                <div className="mono">{eff.warnPercent}%</div>
+              </div>
             </div>
-            <div>
-              <div className="lbl">Token ceiling / mo</div>
-              <div className="mono">{eff.tokenLimit == null ? "— no cap" : compact(eff.tokenLimit)}</div>
-              <div className="dim" style={{ fontSize: 11 }}>used for subscription runs</div>
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <button className="btn" onClick={() => setEditing(true)} disabled={busy}>
+                {ovr ? "Edit override" : "Set override"}
+              </button>
+              {ovr ? (
+                <button className="btn ghost" onClick={clear} disabled={busy}>Clear override</button>
+              ) : null}
             </div>
-            <div>
-              <div className="lbl">Warn at</div>
-              <div className="mono">{eff.warnPercent}%</div>
+          </>
+        ) : (
+          <>
+            <div className="form-grid">
+              <label className="lbl">
+                Cost ceiling / mo (USD)
+                <input className="inp" inputMode="decimal" placeholder="inherit / no cap" value={cost} onChange={(e) => setCost(e.target.value)} />
+              </label>
+              <label className="lbl">
+                Token ceiling / mo
+                <input className="inp" inputMode="numeric" placeholder="inherit / no cap" value={tokens} onChange={(e) => setTokens(e.target.value)} />
+              </label>
+              <label className="lbl">
+                Warn at %
+                <input className="inp" inputMode="numeric" placeholder="inherit" value={warn} onChange={(e) => setWarn(e.target.value)} />
+                <span className="hint">Blank = inherit enterprise</span>
+              </label>
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={() => setEditing(true)} disabled={busy}>
-              {ovr ? "Edit override" : "Set override"}
-            </button>
-            {ovr ? (
-              <button className="btn ghost" onClick={clear} disabled={busy}>Clear override</button>
-            ) : null}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="g3" style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(3, 1fr)", padding: "4px 0 10px" }}>
-            <label className="lbl">
-              Cost ceiling / mo (USD)
-              <input className="inp" inputMode="decimal" placeholder="inherit / no cap" value={cost} onChange={(e) => setCost(e.target.value)} />
-            </label>
-            <label className="lbl">
-              Token ceiling / mo
-              <input className="inp" inputMode="numeric" placeholder="inherit / no cap" value={tokens} onChange={(e) => setTokens(e.target.value)} />
-            </label>
-            <label className="lbl">
-              Warn at % (blank = inherit)
-              <input className="inp" inputMode="numeric" placeholder="inherit" value={warn} onChange={(e) => setWarn(e.target.value)} />
-            </label>
-          </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-            <label className="lbl" style={{ maxWidth: 220 }}>
-              Enforcement
-              <select className="inp" value={mode} onChange={(e) => setMode(e.target.value as LimitMode | "inherit")}>
-                <option value="inherit">Inherit enterprise</option>
-                <option value="off">Off</option>
-                <option value="soft">Soft — warn</option>
-                <option value="hard">Hard — block</option>
-              </select>
-            </label>
-            <button className="btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save override"}</button>
-            <button className="btn ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</button>
-          </div>
-        </>
-      )}
-      {msg && <p className="dim" style={{ fontSize: 12, marginTop: 8 }}>{msg}</p>}
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <label className="lbl" style={{ flex: "1 1 220px", maxWidth: 280 }}>
+                Enforcement
+                <select className="inp" value={mode} onChange={(e) => setMode(e.target.value as LimitMode | "inherit")}>
+                  <option value="inherit">Inherit enterprise</option>
+                  <option value="off">Off</option>
+                  <option value="soft">Soft — warn</option>
+                  <option value="hard">Hard — block</option>
+                </select>
+              </label>
+              <button className="btn" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save override"}</button>
+              <button className="btn ghost" onClick={() => setEditing(false)} disabled={busy}>Cancel</button>
+            </div>
+          </>
+        )}
+        {msg && <p className="dim" style={{ fontSize: 12, marginTop: 12 }}>{msg}</p>}
+      </div>
     </div>
   );
 }

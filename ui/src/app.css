@@ -10,16 +10,41 @@ button.theme-btn, .btn { cursor: pointer; }
 .row.cols-22-1 { grid-template-columns: 2.2fr 1fr; }
 
 /* form controls (Budgets & Limits, instance limit override) */
+
+/* padded body for non-table panel content (matches .panel-h / .hbars padding) */
+.panel-body { padding: 16px; }
+
+/* a labelled form field: uppercase caption, control, optional hint underneath */
 label.lbl {
-  display: flex; flex-direction: column; gap: 4px;
-  font-size: 11px; color: var(--muted);
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
   text-transform: uppercase; letter-spacing: .6px;
+  min-width: 0;
 }
-.inp {
-  background: var(--panel2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 7px 9px; font: 13px var(--mono); width: 100%;
+/* hint text under a control should read as normal-case help, not part of the caption */
+label.lbl .hint {
+  font-size: 11px; font-weight: 400; color: var(--dim);
   text-transform: none; letter-spacing: 0;
 }
-.inp:focus { outline: none; border-color: var(--accent); }
+.inp {
+  box-sizing: border-box;
+  background: var(--panel2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; font: 13px var(--mono); width: 100%; height: 34px;
+  text-transform: none; letter-spacing: 0;
+}
+.inp::placeholder { color: var(--dim); }
+.inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 select.inp { font-family: var(--sans); cursor: pointer; }
+
+/* responsive 3-up field grid that collapses on narrow viewports */
+.form-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.form-actions { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+@media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } }
+
+/* read-only field (label caption + value), e.g. the effective-limit view */
+.field-read { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field-cap {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .6px;
+}

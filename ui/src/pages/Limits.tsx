@@ -85,54 +85,54 @@ export function Limits() {
               applies to every instance unless overridden · cost for metered runs, tokens for subscription runs
             </span>
           </div>
-          <div className="g3" style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(3, 1fr)", padding: "6px 0 10px" }}>
-            <label className="lbl">
-              Cost ceiling / month (USD)
-              <input
-                className="inp"
-                inputMode="decimal"
-                placeholder="no limit"
-                value={cost}
-                onChange={(e) => setCost(e.target.value)}
-              />
-              <span className="dim" style={{ fontSize: 10 }}>blank = no cost cap</span>
-            </label>
-            <label className="lbl">
-              Token ceiling / month
-              <input
-                className="inp"
-                inputMode="numeric"
-                placeholder="no limit"
-                value={tokens}
-                onChange={(e) => setTokens(e.target.value)}
-              />
-              <span className="dim" style={{ fontSize: 10 }}>used when runs are subscription-billed</span>
-            </label>
-            <label className="lbl">
-              Warn at %
-              <input className="inp" inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} />
-              <span className="dim" style={{ fontSize: 10 }}>soft alert threshold</span>
-            </label>
+          <div className="panel-body">
+            <div className="form-grid">
+              <label className="lbl">
+                Cost ceiling / month (USD)
+                <input
+                  className="inp"
+                  inputMode="decimal"
+                  placeholder="no limit"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                />
+                <span className="hint">Blank = no cost cap</span>
+              </label>
+              <label className="lbl">
+                Token ceiling / month
+                <input
+                  className="inp"
+                  inputMode="numeric"
+                  placeholder="no limit"
+                  value={tokens}
+                  onChange={(e) => setTokens(e.target.value)}
+                />
+                <span className="hint">Used when runs are subscription-billed</span>
+              </label>
+              <label className="lbl">
+                Warn at %
+                <input className="inp" inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} />
+                <span className="hint">Soft alert threshold</span>
+              </label>
+            </div>
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <label className="lbl" style={{ flex: "1 1 240px", maxWidth: 300 }}>
+                Enforcement
+                <select className="inp" value={mode} onChange={(e) => setMode(e.target.value as LimitMode)}>
+                  <option value="off">Off — no limit pushed</option>
+                  <option value="soft">Soft — warn &amp; alert, don't block</option>
+                  <option value="hard">Hard — block runs at the ceiling</option>
+                </select>
+              </label>
+              <button className="btn" onClick={saveEnterprise} disabled={saving}>
+                {saving ? "Saving…" : "Save enterprise default"}
+              </button>
+              {ent.data?.enterprise ? (
+                <span className="dim" style={{ fontSize: 11, paddingBottom: 9 }}>v{ent.data.enterprise.version}</span>
+              ) : null}
+            </div>
+            {msg && <p className="dim" style={{ fontSize: 12, marginTop: 12 }}>{msg}</p>}
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <label className="lbl" style={{ maxWidth: 220 }}>
-              Enforcement
-              <select className="inp" value={mode} onChange={(e) => setMode(e.target.value as LimitMode)}>
-                <option value="off">Off — no limit pushed</option>
-                <option value="soft">Soft — warn &amp; alert, don't block</option>
-                <option value="hard">Hard — block runs at the ceiling</option>
-              </select>
-            </label>
-            <button className="btn" onClick={saveEnterprise} disabled={saving} style={{ alignSelf: "flex-end" }}>
-              {saving ? "Saving…" : "Save enterprise default"}
-            </button>
-            {ent.data?.enterprise ? (
-              <span className="dim" style={{ fontSize: 11, alignSelf: "flex-end" }}>
-                v{ent.data.enterprise.version}
-              </span>
-            ) : null}
-          </div>
-          {msg && <p className="dim" style={{ fontSize: 12, marginTop: 8 }}>{msg}</p>}
         </div>
 
         <div className="panel">

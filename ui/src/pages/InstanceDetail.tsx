@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { api, money, compact } from "../api.ts";
 import { useFetch } from "../useFetch.ts";
@@ -33,16 +34,19 @@ function relTime(ts: string): string {
 export function InstanceDetail() {
   const { id = "" } = useParams();
   const nav = useNavigate();
+  const [squadFilter, setSquadFilter] = useState<string | null>(null);
   const { data, loading, reload } = useFetch(() => api.instance(id), [id], 15_000);
   const issuesQuery = useFetch(() => api.instanceIssues(id), [id], 15_000);
 
   if (loading) return <div className="loading">loading instance…</div>;
   if (!data) return <div className="empty">Instance not found.</div>;
 
-  const issues = issuesQuery.data?.issues ?? [];
+  const allIssues = issuesQuery.data?.issues ?? [];
+  const issues = squadFilter ? allIssues.filter((i) => i.squadLocalId === squadFilter) : allIssues;
 
   const { instance } = data;
   const squads = data.squads ?? [];
+  const agentsBySquad = data.agentsBySquad ?? {};
   const costByModelMtd = data.costByModelMtd ?? [];
   const tok = data.tokensMtd ?? EMPTY_TOKENS;
   const cachedPct =
@@ -127,6 +131,7 @@ export function InstanceDetail() {
           <div className="panel">
             <div className="panel-h">
               <h2>Squads</h2>
+              <span className="dim" style={{ fontSize: 11 }}>click a squad to filter issues</span>
             </div>
             {squads.length === 0 ? (
               <div className="empty">No squads reported yet.</div>
@@ -136,6 +141,7 @@ export function InstanceDetail() {
                   <tr>
                     <th>Squad</th>
                     <th>Status</th>
+                    <th>Agents</th>
                     <th className="r">Spent MTD</th>
                     <th>Budget</th>
                   </tr>
@@ -144,12 +150,29 @@ export function InstanceDetail() {
                   {squads.map((s) => {
                     const pct = s.budgetMonthlyCents ? Math.round((s.spentMonthlyCents / s.budgetMonthlyCents) * 100) : 0;
                     const cls = pct >= 100 ? "c" : pct >= 80 ? "w" : "";
+                    const ag = agentsBySquad[s.localId] ?? { total: 0, byStatus: {} };
+                    const selected = squadFilter === s.localId;
                     return (
-                      <tr key={s.id}>
+                      <tr
+                        key={s.id}
+                        className="click"
+                        style={selected ? { background: "var(--accent-soft)" } : undefined}
+                        onClick={() => setSquadFilter(selected ? null : s.localId)}
+                      >
                         <td>
                           <b>{s.name}</b>
                         </td>
                         <td className="muted">{s.status}</td>
+                        <td>
+                          <span className="mono">{ag.total}</span>
+                          {ag.total > 0 && (
+                            <span className="dim" style={{ fontSize: 10, marginLeft: 6 }}>
+                              {Object.entries(ag.byStatus)
+                                .map(([st, n]) => `${n} ${st}`)
+                                .join(" · ")}
+                            </span>
+                          )}
+                        </td>
                         <td className="r mono">{money(s.spentMonthlyCents)}</td>
                         <td>
                           <span className="budget">
@@ -195,14 +218,22 @@ export function InstanceDetail() {
         <div className="panel" style={{ marginTop: 12 }}>
           <div className="panel-h">
             <h2>Issues</h2>
-            <span className="dim" style={{ fontSize: 11 }}>
-              {issues.length} · titles only — work content stays on the instance
+            {squadFilter ? (
+              <span className="tag" style={{ cursor: "pointer" }} onClick={() => setSquadFilter(null)}>
+                {squads.find((s) => s.localId === squadFilter)?.name ?? squadFilter} ✕
+              </span>
+            ) : null}
+            <span className="dim" style={{ fontSize: 11, marginLeft: "auto" }}>
+              {issues.length}
+              {squadFilter ? ` of ${allIssues.length}` : ""} · titles only — work content stays on the instance
             </span>
           </div>
           {issuesQuery.loading ? (
             <div className="loading">loading issues…</div>
           ) : issues.length === 0 ? (
-            <div className="empty">No issues reported by this instance.</div>
+            <div className="empty">
+              {squadFilter ? "No issues for the selected squad." : "No issues reported by this instance."}
+            </div>
           ) : (
             <table>
               <thead>

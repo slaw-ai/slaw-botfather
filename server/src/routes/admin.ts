@@ -7,6 +7,7 @@ import {
   enrollments,
   autoApproveRules,
   squads,
+  agents,
   costFacts,
   alerts,
   issues,
@@ -128,6 +129,18 @@ export function adminRouter(db: BotfatherDb): Router {
       .select()
       .from(squads)
       .where(eq(squads.instanceFk, inst.id));
+
+    // agents per squad: total + a status breakdown (e.g. {running:2, idle:4})
+    const agentRows = await db
+      .select({ squadLocalId: agents.squadLocalId, status: agents.status })
+      .from(agents)
+      .where(eq(agents.instanceFk, inst.id));
+    const agentsBySquad: Record<string, { total: number; byStatus: Record<string, number> }> = {};
+    for (const a of agentRows) {
+      const e = (agentsBySquad[a.squadLocalId] ??= { total: 0, byStatus: {} });
+      e.total += 1;
+      e.byStatus[a.status] = (e.byStatus[a.status] ?? 0) + 1;
+    }
     const costByModel = await db
       .select({
         model: costFacts.model,
@@ -183,7 +196,7 @@ export function adminRouter(db: BotfatherDb): Router {
         Number(tok?.subscription_events ?? 0) > 0 && Number(tok?.metered_cents ?? 0) === 0,
     };
 
-    res.json({ instance: inst, squads: squadRows, costByModelMtd: costByModel, tokensMtd });
+    res.json({ instance: inst, squads: squadRows, agentsBySquad, costByModelMtd: costByModel, tokensMtd });
   });
 
   r.post("/instances/:id/revoke", async (req, res) => {

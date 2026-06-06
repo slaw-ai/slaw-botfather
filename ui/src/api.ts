@@ -85,6 +85,7 @@ export const api = {
     get<{
       instance: FleetInstance & { reportIssueTitles: boolean };
       squads: { id: string; localId: string; name: string; status: string; budgetMonthlyCents: number | null; spentMonthlyCents: number }[];
+      agentsBySquad: Record<string, { total: number; byStatus: Record<string, number> }>;
       costByModelMtd: { model: string; costCents: number; inputTokens: number; cachedInputTokens: number; outputTokens: number }[];
       tokensMtd: {
         inputTokens: number;

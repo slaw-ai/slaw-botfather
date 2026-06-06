@@ -12,13 +12,34 @@ const EMPTY_TOKENS = {
   subscriptionDominant: false,
 };
 
+const STATUS_PILL: Record<string, string> = {
+  in_progress: "info",
+  done: "ok",
+  closed: "ok",
+  completed: "ok",
+  cancelled: "dim",
+  backlog: "dim",
+  todo: "dim",
+};
+
+function relTime(ts: string): string {
+  const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
 export function InstanceDetail() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const { data, loading, reload } = useFetch(() => api.instance(id), [id], 15_000);
+  const issuesQuery = useFetch(() => api.instanceIssues(id), [id], 15_000);
 
   if (loading) return <div className="loading">loading instance…</div>;
   if (!data) return <div className="empty">Instance not found.</div>;
+
+  const issues = issuesQuery.data?.issues ?? [];
 
   const { instance } = data;
   const squads = data.squads ?? [];
@@ -169,6 +190,51 @@ export function InstanceDetail() {
               )}
             </div>
           </div>
+        </div>
+
+        <div className="panel" style={{ marginTop: 12 }}>
+          <div className="panel-h">
+            <h2>Issues</h2>
+            <span className="dim" style={{ fontSize: 11 }}>
+              {issues.length} · titles only — work content stays on the instance
+            </span>
+          </div>
+          {issuesQuery.loading ? (
+            <div className="loading">loading issues…</div>
+          ) : issues.length === 0 ? (
+            <div className="empty">No issues reported by this instance.</div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Issue</th>
+                  <th>Title</th>
+                  <th>Squad</th>
+                  <th>Status</th>
+                  <th>Assignee</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {issues.map((i) => (
+                  <tr key={i.localId}>
+                    <td className="mono" style={{ fontSize: 11 }}>{i.localId}</td>
+                    <td>
+                      <b>{i.title}</b>
+                    </td>
+                    <td>
+                      <span className="tag">{i.squadName ?? i.squadLocalId}</span>
+                    </td>
+                    <td>
+                      <span className={`pill ${STATUS_PILL[i.status] ?? "dim"}`}>{i.status}</span>
+                    </td>
+                    <td className="muted">{i.assigneeAgentLocalId ?? "—"}</td>
+                    <td className="dim mono" style={{ fontSize: 11 }}>{relTime(i.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div style={{ marginTop: 14 }}>

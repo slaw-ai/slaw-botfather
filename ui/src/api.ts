@@ -95,7 +95,7 @@ export const api = {
         subscriptionDominant: boolean;
       };
     }>(`/instances/${id}`),
-  issues: (status = "in_progress") =>
+  instanceIssues: (id: string) =>
     get<{
       issues: {
         localId: string;
@@ -104,11 +104,9 @@ export const api = {
         squadLocalId: string;
         assigneeAgentLocalId: string | null;
         updatedAt: string;
-        hostname: string;
-        instanceFk: string;
         squadName: string | null;
       }[];
-    }>(`/issues?status=${status}`),
+    }>(`/instances/${id}/issues`),
   alerts: (status = "active") => get<{ alerts: Alert[] }>(`/alerts?status=${status}`),
   acknowledgeAlert: (id: string) => post<{ ok: boolean }>(`/alerts/${id}/acknowledge`),
   approvals: () => get<{ pending: PendingEnrollment[] }>("/approvals"),

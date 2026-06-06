@@ -208,9 +208,8 @@ export function adminRouter(db: BotfatherDb): Router {
     res.json({ byDay, byModel, byBilling, topInstances, topSquads });
   });
 
-  /* ── issues in flight ── */
-  r.get("/issues", async (req, res) => {
-    const status = typeof req.query.status === "string" ? req.query.status : "in_progress";
+  /* ── issues for one instance (drill-down) ── */
+  r.get("/instances/:id/issues", async (req, res) => {
     const rows = await db
       .select({
         localId: issues.localId,
@@ -219,17 +218,13 @@ export function adminRouter(db: BotfatherDb): Router {
         squadLocalId: issues.squadLocalId,
         assigneeAgentLocalId: issues.assigneeAgentLocalId,
         updatedAt: issues.updatedAt,
-        hostname: machines.hostname,
-        instanceFk: issues.instanceFk,
         squadName: squads.name,
       })
       .from(issues)
-      .innerJoin(instances, eq(issues.instanceFk, instances.id))
-      .innerJoin(machines, eq(instances.machineFk, machines.id))
       .leftJoin(squads, eq(issues.squadFk, squads.id))
-      .where(eq(issues.status, status))
+      .where(eq(issues.instanceFk, req.params.id))
       .orderBy(desc(issues.updatedAt))
-      .limit(200);
+      .limit(500);
     res.json({ issues: rows });
   });
 

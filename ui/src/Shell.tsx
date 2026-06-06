@@ -61,7 +61,6 @@ export function Shell() {
         <div className="nav-sec">Monitor</div>
         <nav className="nav">
           {link("/fleet", "▦", "Fleet")}
-          {link("/issues", "◎", "Issues in Flight")}
           {link("/alerts", "⚠", "Alerts", counts.alerts)}
         </nav>
         <div className="nav-sec">Govern</div>

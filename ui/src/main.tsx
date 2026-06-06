@@ -7,7 +7,6 @@ import { Shell } from "./Shell.tsx";
 import { Fleet } from "./pages/Fleet.tsx";
 import { InstanceDetail } from "./pages/InstanceDetail.tsx";
 import { CostAnalytics } from "./pages/CostAnalytics.tsx";
-import { Issues } from "./pages/Issues.tsx";
 import { Alerts } from "./pages/Alerts.tsx";
 import { Admin } from "./pages/Admin.tsx";
 
@@ -19,7 +18,6 @@ const router = createBrowserRouter([
       { path: "/fleet", element: <Fleet /> },
       { path: "/instances/:id", element: <InstanceDetail /> },
       { path: "/cost", element: <CostAnalytics /> },
-      { path: "/issues", element: <Issues /> },
       { path: "/alerts", element: <Alerts /> },
       { path: "/admin", element: <Admin /> },
     ],

@@ -1158,6 +1158,40 @@ export const STANDARD_SKILLS: StandardSkill[] = [
       done: ["Data flows mapped", "Scope minimized", "Gaps + remediations documented"],
     }),
   },
+  {
+    key: "jira-board-sync",
+    name: "Platform — Connect a Jira Board",
+    description:
+      "Connect a Jira board to a SLAW squad with the slaw.jira-sync plugin: configure the instance, register the webhook, and verify two-way sync.",
+    layer: "platform",
+    discipline: "devops",
+    markdown: body({
+      title: "Platform — Connect a Jira Board",
+      intent:
+        "Stand up bidirectional sync between one Jira board and a SLAW squad using the bundled slaw.jira-sync plugin. One sync agent per board.",
+      inputs: [
+        "The Jira site URL and the numeric board id to sync",
+        "An Atlassian account email + API token (stored as a SLAW secret, never inline)",
+        "The target SLAW squad (and optional project / default assignee agent)",
+        "Whether non-completion status changes should flow back to Jira (syncStatusBack)",
+      ],
+      steps: [
+        "Store the Jira API token as a SLAW secret and note its reference name.",
+        "Install the slaw.jira-sync plugin into the squad. The host reconciles its managed agent (Jira Sync Agent) and hourly managed routine — both start paused; un-pause them when ready.",
+        "Configure the plugin instance: jiraUrl, jiraBoardId, jiraUsername, jiraApiTokenRef, targetSquadId (+ optional targetProjectId / targetAssigneeAgentId / syncStatusBack).",
+        "Register the plugin's webhook URL (POST /api/plugins/<pluginId>/webhooks/jira-event) in Jira for issue created/updated events.",
+        "Verify: create/update a Jira issue → it appears as a SLAW issue (deduped by Jira key); complete a Jira-originated SLAW issue → status + a summary comment land back on the Jira issue.",
+      ],
+      deliverable:
+        "A live two-way Jira ↔ SLAW sync for one board, with the sync agent and hourly reconciliation routine active.",
+      done: [
+        "Plugin instance configured against the board with a secret-backed token",
+        "Webhook registered in Jira and delivering",
+        "Jira → SLAW and SLAW → Jira (on completion) both verified",
+        "One agent per board; no duplicate issues on re-sync",
+      ],
+    }),
+  },
 ];
 
 /** Sanity: keys must be unique. Thrown at import time if a duplicate slips in. */

@@ -178,7 +178,63 @@ export const api = {
     put<{ override: InstanceLimitOverride; effective: LimitSpec }>(`/instances/${id}/limits`, body),
   clearInstanceLimits: (id: string) =>
     del<{ ok: boolean; effective: LimitSpec }>(`/instances/${id}/limits`),
+
+  /* ── skill registry (tower-mastered) ── */
+  skills: (status?: SkillStatus) =>
+    get<{ catalogVersion: number; skills: SkillRow[] }>(`/skills${status ? `?status=${status}` : ""}`),
+  skill: (key: string) => get<{ skill: SkillRow }>(`/skills/${encodeURIComponent(key)}`),
+  createSkill: (body: SkillCreateInput) => post<{ skill: SkillRow }>("/skills", body),
+  updateSkill: (key: string, body: SkillUpdateInput) =>
+    put<{ skill: SkillRow }>(`/skills/${encodeURIComponent(key)}`, body),
+  publishSkill: (key: string) =>
+    post<{ skill: SkillRow; contentChanged: boolean; catalogVersion: number }>(
+      `/skills/${encodeURIComponent(key)}/publish`,
+    ),
+  deprecateSkill: (key: string) =>
+    post<{ skill: SkillRow; catalogVersion: number }>(`/skills/${encodeURIComponent(key)}/deprecate`),
 };
+
+export type SkillStatus = "draft" | "published" | "deprecated";
+
+export interface SkillRow {
+  id: string;
+  key: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  markdown: string;
+  sourceType: string;
+  sourceLocator: string | null;
+  sourceRef: string | null;
+  trustLevel: string;
+  files: Array<{ path: string; content: string; encoding: string }>;
+  status: SkillStatus;
+  version: number;
+  contentHash: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  adoption?: { squads: number; instances: number };
+}
+
+export interface SkillCreateInput {
+  key: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  markdown?: string;
+  trustLevel?: string;
+}
+
+export interface SkillUpdateInput {
+  name?: string;
+  description?: string | null;
+  category?: string | null;
+  markdown?: string;
+  trustLevel?: string;
+}
 
 export type LimitMode = "off" | "soft" | "hard";
 

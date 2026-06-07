@@ -484,7 +484,15 @@ export function InstanceDetail() {
                       <span className="tag">{sk.squadName ?? sk.squadLocalId}</span>
                     </td>
                     <td className="muted" style={{ maxWidth: 360 }}>{sk.description ?? "—"}</td>
-                    <td className="mono" style={{ fontSize: 11 }}>{sk.sourceType}</td>
+                    <td className="mono" style={{ fontSize: 11 }}>
+                      {sk.sourceType === "botfather" ? (
+                        <span className="pill info" title="Mastered by the control tower">
+                          ✦ tower
+                        </span>
+                      ) : (
+                        sk.sourceType
+                      )}
+                    </td>
                     <td>
                       <span className={`pill ${sk.trustLevel === "trusted" ? "ok" : "dim"}`}>{sk.trustLevel}</span>
                     </td>

@@ -57,6 +57,8 @@ export const instances = pgTable(
     limitVersionIssued: integer("limit_version_issued").notNull().default(0),
     /** serialized last-issued spec content, to detect a real change */
     limitIssuedContent: text("limit_issued_content"),
+    /** catalog version the instance last reported having seen (observability) */
+    skillCatalogVersionAcked: integer("skill_catalog_version_acked").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -337,5 +339,62 @@ export const instanceLimitOverrides = pgTable("instance_limit_overrides", {
   mode: text("mode"),
   version: integer("version").notNull().default(1),
   updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/* ───────────── skill registry (tower-MASTERED) ─────────────
+ * The canonical skill library. Authored/curated in the tower and pulled DOWN
+ * by instances (the skill BODY flows tower→instance — the reverse of the
+ * read-only squad_skills descriptor that flows up). Only `published` skills are
+ * served to instances. `version` is a monotonic per-skill counter bumped ONLY
+ * when published content changes (never summed/derived); see
+ * services/skill-registry.ts. The fleet-wide `catalogVersion` lives in
+ * skillCatalogState (a singleton counter advanced on any publish/deprecate).
+ */
+export const skillLibrary = pgTable(
+  "skill_library",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** stable identifier, e.g. "playwright-e2e" */
+    key: text("key").notNull(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    /** free-form category tag: "testing" | "frontend" | "cyber" | ... */
+    category: text("category"),
+    /** canonical skill body (source of truth) */
+    markdown: text("markdown").notNull().default(""),
+    /** provenance of the master copy: "authored" | "github" | "imported" */
+    sourceType: text("source_type").notNull().default("authored"),
+    sourceLocator: text("source_locator"),
+    sourceRef: text("source_ref"),
+    /** governs what SLAW will execute: "markdown_only" | "trusted" */
+    trustLevel: text("trust_level").notNull().default("markdown_only"),
+    /** additional files beyond the .md: [{path, content, encoding}] */
+    files: jsonb("files").$type<Array<Record<string, unknown>>>().notNull().default([]),
+    /** draft | published | deprecated (only published is served) */
+    status: text("status").notNull().default("draft"),
+    /** monotonic; bumps only when published CONTENT changes */
+    version: integer("version").notNull().default(1),
+    /** sha256 of (markdown + files) of the last PUBLISHED content */
+    contentHash: text("content_hash"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("skill_library_key_uq").on(t.key),
+    index("skill_library_status_idx").on(t.status),
+    index("skill_library_category_idx").on(t.category),
+  ],
+);
+
+/** Singleton fleet-wide catalog version. Advanced on any publish/deprecate so
+ * instances can cheaply detect "the catalog changed" via the heartbeat hint. */
+export const skillCatalogState = pgTable("skill_catalog_state", {
+  /** singleton — always 'default' */
+  key: text("key").primaryKey().default("default"),
+  catalogVersion: integer("catalog_version").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

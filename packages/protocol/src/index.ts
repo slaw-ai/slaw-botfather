@@ -86,6 +86,68 @@ export const limitSpecSchema = z.object({
 });
 export type LimitSpec = z.infer<typeof limitSpecSchema>;
 
+/* ────────────────────────── skill registry (tower-mastered) ───────────── */
+
+/**
+ * Botfather is the master skill registry. Skills are authored/curated centrally
+ * and propagate tower → instance (the body flows DOWN — the reverse of the
+ * read-only squad_skill descriptor that flows up). Instances pull the catalog,
+ * then pull full content for the skills a user chooses to install onto a local,
+ * free-form squad. The catalog is versioned by a single monotonic
+ * `catalogVersion`; each skill carries its own monotonic `version` (bumped only
+ * when its published content changes — never derived by summing).
+ */
+
+/** Lightweight descriptor returned by the catalog list (no markdown body). */
+export const skillCatalogEntrySchema = z.object({
+  key: z.string().min(1).max(255),
+  slug: z.string().max(255),
+  name: z.string().max(255),
+  description: z.string().max(2_000).nullable(),
+  category: z.string().max(64).nullable(),
+  /** governs what SLAW will execute: "markdown_only" | "trusted" */
+  trustLevel: z.string().max(64),
+  /** monotonic per-skill; bumps only on published content change */
+  version: z.number().int().positive(),
+  /** sha256 of (markdown + files); lets the instance skip an unchanged re-pull */
+  contentHash: z.string().max(128),
+  hasFiles: z.boolean().default(false),
+  updatedAt: z.string().datetime(),
+});
+export type SkillCatalogEntry = z.infer<typeof skillCatalogEntrySchema>;
+
+/** GET /api/ingest/v1/skills — the full published catalog (descriptors only). */
+export const skillCatalogResponseSchema = z.object({
+  /** monotonic fleet-wide catalog version; advances on any publish/deprecate */
+  catalogVersion: z.number().int().nonnegative(),
+  skills: z.array(skillCatalogEntrySchema).default([]),
+});
+export type SkillCatalogResponse = z.infer<typeof skillCatalogResponseSchema>;
+
+/** One file beyond the canonical .md (parity with SLAW squad_skills.fileInventory). */
+export const skillFileSchema = z.object({
+  path: z.string().min(1).max(1024),
+  /** inline content (v1 inlines small files); large payloads move to refs later */
+  content: z.string(),
+  encoding: z.enum(["utf8", "base64"]).default("utf8"),
+});
+export type SkillFile = z.infer<typeof skillFileSchema>;
+
+/** GET /api/ingest/v1/skills/:key — full content for one skill (pulled on install/update). */
+export const skillContentResponseSchema = z.object({
+  key: z.string().min(1).max(255),
+  slug: z.string().max(255),
+  name: z.string().max(255),
+  description: z.string().max(2_000).nullable(),
+  category: z.string().max(64).nullable(),
+  trustLevel: z.string().max(64),
+  version: z.number().int().positive(),
+  contentHash: z.string().max(128),
+  markdown: z.string(),
+  files: z.array(skillFileSchema).default([]),
+});
+export type SkillContentResponse = z.infer<typeof skillContentResponseSchema>;
+
 /* ────────────────────────── directives (tower → instance back-channel) ── */
 
 export const directiveSchema = z.discriminatedUnion("kind", [
@@ -95,6 +157,8 @@ export const directiveSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("stop_live_stream") }),
   // Push (or clear, with mode:"off") the effective budget limit for this instance.
   z.object({ kind: z.literal("set_limits"), limit: limitSpecSchema }),
+  // HINT only (no body): the skill catalog advanced; pull at your leisure.
+  z.object({ kind: z.literal("skills_updated"), catalogVersion: z.number().int().nonnegative() }),
 ]);
 export type Directive = z.infer<typeof directiveSchema>;
 
@@ -118,6 +182,8 @@ export const heartbeatRequestSchema = z.object({
   lastEventCursor: z.string().nullable(),
   /** version of the budget limit the instance has currently applied (de-dupe) */
   appliedLimitVersion: z.number().int().nonnegative().optional(),
+  /** catalog version the instance has last seen/pulled (observability; never forced) */
+  appliedSkillCatalogVersion: z.number().int().nonnegative().optional(),
 });
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>;
 

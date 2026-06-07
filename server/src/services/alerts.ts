@@ -4,6 +4,7 @@ import { alerts, instances, machines } from "@slaw-botfather/db";
 import type { BotfatherConfig } from "../config.js";
 import { rows } from "./sql-util.js";
 import { resolveLimits } from "./limits.js";
+import { getCatalogVersion } from "./skill-registry.js";
 
 export type Severity = "critical" | "warning" | "info";
 
@@ -227,6 +228,42 @@ async function evalVersionDrift(db: BotfatherDb, fleetTarget: string | null): Pr
   }
 }
 
+/**
+ * Skill catalog drift — flag active instances stuck below the current published
+ * catalog version (they haven't pulled the latest skills). Info-level; resolves
+ * once every active instance has acked the current catalog version. Only fires
+ * when there's a published catalog (catalogVersion > 0).
+ */
+async function evalSkillVersionDrift(db: BotfatherDb): Promise<void> {
+  const catalogVersion = await getCatalogVersion(db);
+  if (catalogVersion <= 0) {
+    await resolveWhere(db, "skill_version_drift", []);
+    return;
+  }
+  const driftRows = rows<{ hostname: string; acked: number }>(
+    await db.execute(sql`
+      SELECT m.hostname AS hostname, i.skill_catalog_version_acked AS acked
+      FROM instances i
+      JOIN machines m ON m.id = i.machine_fk
+      WHERE i.status IN ('ok','offline','stale')
+        AND i.skill_catalog_version_acked < ${catalogVersion}
+    `),
+  );
+  if (driftRows.length > 0) {
+    await raise(db, {
+      rule: "skill_version_drift",
+      severity: "info",
+      instanceFk: null,
+      squadLocalId: null,
+      title: `Skill catalog drift — ${driftRows.length} instance(s) below v${catalogVersion}`,
+      detail: driftRows.map((d) => `${d.hostname}@v${Number(d.acked)}`).join(", ").slice(0, 480),
+      dedupeKey: "fleet",
+    });
+  } else {
+    await resolveWhere(db, "skill_version_drift", []);
+  }
+}
+
 function cmpSemver(a: string, b: string): number {
   const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
   const pb = b.split(".").map((n) => parseInt(n, 10) || 0);
@@ -312,6 +349,7 @@ export async function evaluateAlerts(db: BotfatherDb): Promise<void> {
   await evalInstanceHealth(db);
   await evalSpendSpike(db);
   await evalVersionDrift(db, await fleetTargetVersion(db));
+  await evalSkillVersionDrift(db);
   await evalTowerLimitBreach(db);
 }
 

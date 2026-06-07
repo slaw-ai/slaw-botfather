@@ -6,6 +6,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { schema } from "@slaw-botfather/db";
 import type { BotfatherDb } from "@slaw-botfather/db";
+import { eq } from "drizzle-orm";
 import {
   createSkill,
   updateSkill,
@@ -18,6 +19,8 @@ import {
   getPublishedSkillContent,
   computeContentHash,
 } from "../src/services/skill-registry.js";
+import { evaluateAlerts } from "../src/services/alerts.js";
+import { enroll, decideEnrollment, pollEnrollment } from "../src/services/enrollment.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.resolve(here, "../../packages/db/migrations");
@@ -158,5 +161,41 @@ describe("listing + missing", () => {
     expect((await listSkills(db)).length).toBe(2);
     expect(await getSkill(db, "nope")).toBeNull();
     expect(await getPublishedSkillContent(db, "nope")).toBeNull();
+  });
+});
+
+describe("skill_version_drift alert (P6)", () => {
+  async function enrolledInstance() {
+    const e = await enroll(
+      db,
+      { machineId: "drift-test-1", instanceId: "default", hostname: "DRIFT-1", os: "linux", slawVersion: "0.4.2" },
+      true,
+    );
+    await decideEnrollment(db, e.enrollmentId, "approve", "admin");
+    await pollEnrollment(db, e.enrollmentId);
+    const [inst] = await db.select().from(schema.instances).where(eq(schema.instances.instanceId, "default"));
+    return inst.id;
+  }
+
+  it("raises when an active instance is below the catalog version, resolves once it catches up", async () => {
+    const id = await enrolledInstance();
+    await createSkill(db, { key: "k", name: "K", markdown: "x" });
+    await publishSkill(db, "k"); // catalogVersion = 1, instance acked 0 → drift
+    await evaluateAlerts(db);
+    let active = await db.select().from(schema.alerts).where(eq(schema.alerts.rule, "skill_version_drift"));
+    expect(active.filter((a) => a.status === "active")).toHaveLength(1);
+
+    // instance acks the catalog → drift resolves
+    await db.update(schema.instances).set({ skillCatalogVersionAcked: 1 }).where(eq(schema.instances.id, id));
+    await evaluateAlerts(db);
+    active = await db.select().from(schema.alerts).where(eq(schema.alerts.rule, "skill_version_drift"));
+    expect(active.filter((a) => a.status === "active")).toHaveLength(0);
+  });
+
+  it("does not fire when no catalog is published", async () => {
+    await enrolledInstance();
+    await evaluateAlerts(db);
+    const active = await db.select().from(schema.alerts).where(eq(schema.alerts.rule, "skill_version_drift"));
+    expect(active.filter((a) => a.status === "active")).toHaveLength(0);
   });
 });

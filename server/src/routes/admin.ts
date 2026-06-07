@@ -480,6 +480,7 @@ export function adminRouter(db: BotfatherDb): Router {
       sourceRef: nullableStr(b.sourceRef) ?? null,
       trustLevel: trimStr(b.trustLevel),
       files: b.files,
+      metadata: b.metadata,
       createdBy: trimStr(b.createdBy) ?? "admin",
     });
     res.status(201).json({ skill: s });
@@ -496,6 +497,7 @@ export function adminRouter(db: BotfatherDb): Router {
       sourceLocator: nullableStr(b.sourceLocator),
       sourceRef: nullableStr(b.sourceRef),
       files: b.files,
+      metadata: b.metadata,
     });
     if (!s) {
       res.status(404).json({ error: "not found" });

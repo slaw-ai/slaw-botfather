@@ -133,6 +133,54 @@ describe("publish + version bump rule (must-not-regress)", () => {
   });
 });
 
+describe("metadata (two-axis) — NOT content, must not bump version", () => {
+  it("persists metadata on create and flows it through catalog + content", async () => {
+    await createSkill(db, {
+      key: "ios-feature-dev",
+      name: "iOS — Feature Development",
+      markdown: "# body",
+      metadata: { layer: "mobile-ios", discipline: "engineering", tags: ["swift"] },
+    });
+    await publishSkill(db, "ios-feature-dev");
+
+    const cat = await getPublishedCatalog(db);
+    expect(cat.skills[0].metadata).toMatchObject({
+      layer: "mobile-ios",
+      discipline: "engineering",
+    });
+    const content = await getPublishedSkillContent(db, "ios-feature-dev");
+    expect(content?.metadata).toMatchObject({ layer: "mobile-ios", discipline: "engineering" });
+  });
+
+  it("editing ONLY metadata does not bump version or change contentHash, even after republish", async () => {
+    await createSkill(db, {
+      key: "k",
+      name: "K",
+      markdown: "stable body",
+      metadata: { layer: "bff", discipline: "engineering" },
+    });
+    const first = await publishSkill(db, "k");
+    expect(first?.skill.version).toBe(1);
+    const hashV1 = first?.skill.contentHash;
+
+    // change only the metadata (the layer), leave markdown/files untouched
+    const edited = await updateSkill(db, "k", { metadata: { layer: "graphql", discipline: "engineering" } });
+    expect(edited?.metadata).toMatchObject({ layer: "graphql" });
+
+    const re = await publishSkill(db, "k");
+    expect(re?.skill.version).toBe(1); // NOT bumped — metadata is not content
+    expect(re?.contentChanged).toBe(false);
+    expect(re?.skill.contentHash).toBe(hashV1);
+    expect(await getCatalogVersion(db)).toBe(1);
+  });
+
+  it("normalizes non-object metadata to {}", async () => {
+    await createSkill(db, { key: "k2", name: "K2", markdown: "b", metadata: "nope" as unknown });
+    const s = await getSkill(db, "k2");
+    expect(s?.metadata).toEqual({});
+  });
+});
+
 describe("deprecate removes from catalog without uninstalling", () => {
   it("drops a published skill from the served catalog and advances catalog version", async () => {
     await createSkill(db, { key: "k", name: "K", markdown: "body" });

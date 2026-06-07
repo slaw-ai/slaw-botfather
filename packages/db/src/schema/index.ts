@@ -378,6 +378,9 @@ export const skillLibrary = pgTable(
     version: integer("version").notNull().default(1),
     /** sha256 of (markdown + files) of the last PUBLISHED content */
     contentHash: text("content_hash"),
+    /** two-axis classification + free tags: { layer, discipline, tags[] }.
+     * NOT part of contentHash — editing metadata must not bump the version. */
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
     createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -44,6 +44,9 @@ export interface SkillRow {
   sourceRef: string | null;
   trustLevel: string;
   files: SkillFileEntry[];
+  /** two-axis classification + free tags { layer, discipline, tags[] };
+   * NOT part of contentHash — a metadata edit must not bump the version. */
+  metadata: Record<string, unknown>;
   status: SkillStatus;
   version: number;
   contentHash: string | null;
@@ -78,6 +81,12 @@ function normalizeFiles(files: unknown): SkillFileEntry[] {
     });
   }
   return out;
+}
+
+/** Coerce arbitrary input into a plain metadata object. Non-objects → {}. */
+function normalizeMetadata(meta: unknown): Record<string, unknown> {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return {};
+  return { ...(meta as Record<string, unknown>) };
 }
 
 /** The jsonb column is typed as Array<Record<string, unknown>>; SkillFileEntry
@@ -118,6 +127,7 @@ function rowToSkill(row: typeof skillLibrary.$inferSelect): SkillRow {
     sourceRef: row.sourceRef,
     trustLevel: row.trustLevel,
     files: normalizeFiles(row.files),
+    metadata: normalizeMetadata(row.metadata),
     status: row.status as SkillStatus,
     version: row.version,
     contentHash: row.contentHash,
@@ -168,6 +178,7 @@ export interface CreateSkillInput {
   sourceRef?: string | null;
   trustLevel?: string;
   files?: unknown;
+  metadata?: unknown;
   createdBy?: string | null;
 }
 
@@ -187,6 +198,7 @@ export async function createSkill(db: BotfatherDb, input: CreateSkillInput): Pro
       sourceRef: input.sourceRef ?? null,
       trustLevel: input.trustLevel ?? "markdown_only",
       files: filesForDb(normalizeFiles(input.files)),
+      metadata: normalizeMetadata(input.metadata),
       status: "draft",
       version: 1,
       contentHash: null,
@@ -205,6 +217,7 @@ export interface UpdateSkillInput {
   sourceLocator?: string | null;
   sourceRef?: string | null;
   files?: unknown;
+  metadata?: unknown;
 }
 
 /**
@@ -229,6 +242,8 @@ export async function updateSkill(
   if (input.sourceLocator !== undefined) set.sourceLocator = input.sourceLocator;
   if (input.sourceRef !== undefined) set.sourceRef = input.sourceRef;
   if (input.files !== undefined) set.files = filesForDb(normalizeFiles(input.files));
+  // metadata is NOT content: setting it bumps updatedAt only, never version/contentHash.
+  if (input.metadata !== undefined) set.metadata = normalizeMetadata(input.metadata);
 
   const [row] = await db
     .update(skillLibrary)
@@ -336,6 +351,7 @@ export async function getPublishedCatalog(
       version: row.version,
       contentHash: row.contentHash ?? computeContentHash(row.markdown, files),
       hasFiles: files.length > 0,
+      metadata: normalizeMetadata(row.metadata),
       updatedAt: (row.publishedAt ?? row.updatedAt).toISOString(),
     };
   });
@@ -364,5 +380,6 @@ export async function getPublishedSkillContent(
     contentHash: row.contentHash ?? computeContentHash(row.markdown, files),
     markdown: row.markdown,
     files,
+    metadata: normalizeMetadata(row.metadata),
   };
 }

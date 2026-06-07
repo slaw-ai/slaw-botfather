@@ -36,6 +36,13 @@
       "when": 1780792090314,
       "tag": "0004_vengeful_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780802051443,
+      "tag": "0005_skill_metadata",
+      "breakpoints": true
     }
   ]
 }

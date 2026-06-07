@@ -98,6 +98,20 @@ export type LimitSpec = z.infer<typeof limitSpecSchema>;
  * when its published content changes — never derived by summing).
  */
 
+/** Two-axis classification + free tags carried alongside each skill.
+ * Optional/defaulted so older towers (pre-metadata) still validate. */
+export const skillMetadataSchema = z
+  .object({
+    /** stack layer: storefront-web | mobile-ios | ... | cross */
+    layer: z.string().max(64).optional(),
+    /** discipline: engineering | design | content | qa | ... */
+    discipline: z.string().max(64).optional(),
+    /** free-form extra tags */
+    tags: z.array(z.string().max(64)).optional(),
+  })
+  .passthrough();
+export type SkillMetadata = z.infer<typeof skillMetadataSchema>;
+
 /** Lightweight descriptor returned by the catalog list (no markdown body). */
 export const skillCatalogEntrySchema = z.object({
   key: z.string().min(1).max(255),
@@ -112,6 +126,8 @@ export const skillCatalogEntrySchema = z.object({
   /** sha256 of (markdown + files); lets the instance skip an unchanged re-pull */
   contentHash: z.string().max(128),
   hasFiles: z.boolean().default(false),
+  /** two-axis classification; not part of contentHash. Optional for back-compat. */
+  metadata: skillMetadataSchema.optional(),
   updatedAt: z.string().datetime(),
 });
 export type SkillCatalogEntry = z.infer<typeof skillCatalogEntrySchema>;
@@ -145,6 +161,8 @@ export const skillContentResponseSchema = z.object({
   contentHash: z.string().max(128),
   markdown: z.string(),
   files: z.array(skillFileSchema).default([]),
+  /** two-axis classification; not part of contentHash. Optional for back-compat. */
+  metadata: skillMetadataSchema.optional(),
 });
 export type SkillContentResponse = z.infer<typeof skillContentResponseSchema>;
 

@@ -23,6 +23,15 @@ import {
   resolveLimits,
   type LimitMode,
 } from "../services/limits.js";
+import {
+  listSkills,
+  getSkill,
+  createSkill,
+  updateSkill,
+  publishSkill,
+  deprecateSkill,
+  getCatalogVersion,
+} from "../services/skill-registry.js";
 import { rows } from "../services/sql-util.js";
 import {
   networkSummary,
@@ -394,6 +403,127 @@ export function adminRouter(db: BotfatherDb): Router {
     }
     await clearOverride(db, inst.id);
     res.json({ ok: true, effective: await resolveLimits(db, inst.id) });
+  });
+
+  /* ── skill registry (tower-mastered) ──
+   * Author/curate the canonical skill library. CRUD + publish/deprecate
+   * lifecycle. Each list row carries fleet "adoption" = how many squad_skills
+   * descriptors across the fleet were installed from this library key. */
+  const trimStr = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+  const nullableStr = (v: unknown): string | null | undefined =>
+    v === null ? null : typeof v === "string" ? v : undefined;
+
+  // adoption counts keyed by skill_library.key, via the reported descriptors
+  // (squad_skills rows whose sourceType="botfather" carry key = library key).
+  async function adoptionByKey(): Promise<Map<string, { squads: number; instances: number }>> {
+    const out = new Map<string, { squads: number; instances: number }>();
+    const r2 = rows<{ key: string; squads: number; instances: number }>(
+      await db.execute(sql`
+        SELECT key,
+               COUNT(*)::int AS squads,
+               COUNT(DISTINCT instance_fk)::int AS instances
+        FROM squad_skills
+        WHERE source_type = 'botfather'
+        GROUP BY key
+      `),
+    );
+    for (const row of r2) out.set(row.key, { squads: row.squads, instances: row.instances });
+    return out;
+  }
+
+  r.get("/skills", async (req, res) => {
+    const status = trimStr(req.query.status);
+    const all = await listSkills(
+      db,
+      status === "draft" || status === "published" || status === "deprecated" ? { status } : {},
+    );
+    const adoption = await adoptionByKey();
+    res.json({
+      catalogVersion: await getCatalogVersion(db),
+      skills: all.map((s) => ({
+        ...s,
+        adoption: adoption.get(s.key) ?? { squads: 0, instances: 0 },
+      })),
+    });
+  });
+
+  r.get("/skills/:key", async (req, res) => {
+    const s = await getSkill(db, req.params.key);
+    if (!s) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    const adoption = await adoptionByKey();
+    res.json({ skill: { ...s, adoption: adoption.get(s.key) ?? { squads: 0, instances: 0 } } });
+  });
+
+  r.post("/skills", async (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const key = trimStr(b.key)?.trim();
+    const name = trimStr(b.name);
+    if (!key || !name) {
+      res.status(400).json({ error: "key and name are required" });
+      return;
+    }
+    if (await getSkill(db, key)) {
+      res.status(409).json({ error: "a skill with this key already exists", code: "skill_key_exists" });
+      return;
+    }
+    const s = await createSkill(db, {
+      key,
+      name,
+      description: nullableStr(b.description) ?? null,
+      category: nullableStr(b.category) ?? null,
+      markdown: trimStr(b.markdown) ?? "",
+      sourceType: trimStr(b.sourceType),
+      sourceLocator: nullableStr(b.sourceLocator) ?? null,
+      sourceRef: nullableStr(b.sourceRef) ?? null,
+      trustLevel: trimStr(b.trustLevel),
+      files: b.files,
+      createdBy: trimStr(b.createdBy) ?? "admin",
+    });
+    res.status(201).json({ skill: s });
+  });
+
+  r.put("/skills/:key", async (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const s = await updateSkill(db, req.params.key, {
+      name: trimStr(b.name),
+      description: nullableStr(b.description),
+      category: nullableStr(b.category),
+      markdown: trimStr(b.markdown),
+      trustLevel: trimStr(b.trustLevel),
+      sourceLocator: nullableStr(b.sourceLocator),
+      sourceRef: nullableStr(b.sourceRef),
+      files: b.files,
+    });
+    if (!s) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    res.json({ skill: s });
+  });
+
+  r.post("/skills/:key/publish", async (req, res) => {
+    const result = await publishSkill(db, req.params.key);
+    if (!result) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    res.json({
+      skill: result.skill,
+      contentChanged: result.contentChanged,
+      catalogVersion: result.catalogVersion,
+    });
+  });
+
+  r.post("/skills/:key/deprecate", async (req, res) => {
+    const result = await deprecateSkill(db, req.params.key);
+    if (!result) {
+      res.status(404).json({ error: "not found" });
+      return;
+    }
+    res.json({ skill: result.skill, catalogVersion: result.catalogVersion });
   });
 
   return r;

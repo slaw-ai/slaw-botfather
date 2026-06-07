@@ -12,6 +12,7 @@ export interface AuthedInstance {
   reportIssueTitles: boolean;
   lastSyncCursor: string | null;
   limitVersionAcked: number;
+  skillCatalogVersionAcked: number;
 }
 
 /** Retrieve the authenticated instance set by instanceAuth. */
@@ -43,6 +44,7 @@ export function instanceAuth(db: BotfatherDb) {
           reportIssueTitles: row.reportIssueTitles,
           lastSyncCursor: row.lastSyncCursor,
           limitVersionAcked: row.limitVersionAcked ?? 0,
+          skillCatalogVersionAcked: row.skillCatalogVersionAcked ?? 0,
         } satisfies AuthedInstance;
         next();
         return;

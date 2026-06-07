@@ -18,6 +18,8 @@ import { enroll, pollEnrollment } from "../services/enrollment.js";
 import { applySyncBatch, linkSquadFks } from "../services/sync.js";
 import { reconcile } from "../services/reconciliation.js";
 import { buildLimitDirectives, recordAppliedLimitVersion } from "../services/limits.js";
+import { buildSkillDirectives, recordAppliedCatalogVersion } from "../services/skill-directives.js";
+import { getPublishedCatalog, getPublishedSkillContent } from "../services/skill-registry.js";
 import { instanceAuth, ingestRateLimit, authedInstance } from "../middleware/instance-auth.js";
 import type { BotfatherConfig } from "../config.js";
 
@@ -92,8 +94,13 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     // record the limit version the instance reports applied, then push the
     // effective limit if it's still behind.
     await recordAppliedLimitVersion(db, inst.id, parsed.data.appliedLimitVersion);
+    await recordAppliedCatalogVersion(db, inst.id, parsed.data.appliedSkillCatalogVersion);
     const acked = parsed.data.appliedLimitVersion ?? inst.limitVersionAcked;
-    const directives = await buildLimitDirectives(db, inst.id, acked);
+    const catalogAcked = parsed.data.appliedSkillCatalogVersion ?? inst.skillCatalogVersionAcked;
+    const directives = [
+      ...(await buildLimitDirectives(db, inst.id, acked)),
+      ...(await buildSkillDirectives(db, inst.id, catalogAcked)),
+    ];
     const body: HeartbeatResponse = { acknowledged: true, directives };
     res.json(body);
   });
@@ -108,7 +115,10 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     const outcome = await applySyncBatch(db, inst.id, parsed.data);
     if (parsed.data.upserts.length > 0) await linkSquadFks(db, inst.id);
     await touchLiveness(inst.id, inst.machineFk);
-    const directives = await buildLimitDirectives(db, inst.id, inst.limitVersionAcked);
+    const directives = [
+      ...(await buildLimitDirectives(db, inst.id, inst.limitVersionAcked)),
+      ...(await buildSkillDirectives(db, inst.id, inst.skillCatalogVersionAcked)),
+    ];
     const body: SyncResponse = {
       acknowledgedCursor: parsed.data.batchCursor,
       accepted: outcome,
@@ -127,6 +137,28 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
     await touchLiveness(inst.id, inst.machineFk);
     const result: ManifestResponse = await reconcile(db, inst.id, parsed.data);
     res.json(result);
+  });
+
+  /* ── skill registry: catalog pull (authenticated instances) ──
+   * The instance pulls the published catalog (descriptors) and per-skill content
+   * on its own schedule. Body flows tower→instance ONLY here, never on the
+   * heartbeat/sync response — those carry just the lightweight hint. */
+  r.get("/skills", auth, limit, async (_req, res) => {
+    const inst = authedInstance(res);
+    await touchLiveness(inst.id, inst.machineFk);
+    const catalog = await getPublishedCatalog(db);
+    res.json(catalog);
+  });
+
+  r.get("/skills/:key", auth, limit, async (req, res) => {
+    const inst = authedInstance(res);
+    await touchLiveness(inst.id, inst.machineFk);
+    const content = await getPublishedSkillContent(db, req.params.key);
+    if (!content) {
+      res.status(404).json({ error: "skill not found or not published", code: "skill_not_found" });
+      return;
+    }
+    res.json(content);
   });
 
   return r;

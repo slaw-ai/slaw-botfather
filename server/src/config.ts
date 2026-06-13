@@ -10,6 +10,17 @@ export interface BotfatherConfig {
   staleAfterHours: number;
   /** max sync requests per instance per minute */
   ingestRateLimitPerMin: number;
+  /**
+   * Host the HTTP server binds to. Loopback by default so a fresh tower is
+   * never reachable off-box; operators fronting it with a proxy set
+   * BOTFATHER_BIND=0.0.0.0 deliberately.
+   */
+  bindHost: string;
+  /**
+   * Shared admin secret guarding /api/admin (compared constant-time).
+   * Undefined → loopback-only dev convenience; required once exposed.
+   */
+  adminToken: string | undefined;
 }
 
 export function loadConfig(): BotfatherConfig {
@@ -22,5 +33,7 @@ export function loadConfig(): BotfatherConfig {
     heartbeatIntervalSec: 60,
     staleAfterHours: 24,
     ingestRateLimitPerMin: Number(process.env.BOTFATHER_RATE_LIMIT ?? 120),
+    bindHost: process.env.BOTFATHER_BIND ?? "127.0.0.1",
+    adminToken: process.env.BOTFATHER_ADMIN_TOKEN || undefined,
   };
 }

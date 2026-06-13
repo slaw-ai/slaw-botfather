@@ -44,6 +44,8 @@ const config = {
   heartbeatIntervalSec: 60,
   staleAfterHours: 24,
   ingestRateLimitPerMin: 1000,
+  bindHost: "127.0.0.1",
+  adminToken: undefined,
 };
 
 beforeAll(async () => {

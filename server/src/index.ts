@@ -34,10 +34,24 @@ async function main() {
     console.error("botfather: standard-skills seed failed (continuing):", err);
   }
 
+  // Fail closed: refuse to start exposed (non-loopback) without admin auth,
+  // otherwise the whole admin API (budgets, approvals, skill publishing) is
+  // reachable unauthenticated off-box. Operators widen the bind deliberately
+  // and must set BOTFATHER_ADMIN_TOKEN when they do.
+  if (config.bindHost !== "127.0.0.1" && config.bindHost !== "::1" && !config.adminToken) {
+    console.error(
+      `botfather: refusing to start — BOTFATHER_BIND=${config.bindHost} exposes the admin API but ` +
+        `BOTFATHER_ADMIN_TOKEN is not set. Generate one with \`openssl rand -hex 32\` and set it, ` +
+        `or bind to 127.0.0.1 (the default) behind a reverse proxy.`,
+    );
+    await stop();
+    process.exit(1);
+  }
+
   const app = createApp(db, config);
-  const server = app.listen(config.port, () => {
+  const server = app.listen(config.port, config.bindHost, () => {
     // eslint-disable-next-line no-console
-    console.log(`botfather listening on :${config.port}`);
+    console.log(`botfather listening on ${config.bindHost}:${config.port}`);
   });
 
   const liveHub = new LiveHub();

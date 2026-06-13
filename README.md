@@ -53,3 +53,34 @@ pnpm --filter @slaw-botfather/server test
 
 > Note: production uses node-postgres against your embedded Postgres. The
 > sandbox/test path uses pglite only.
+
+## Security: bind & admin auth
+
+The tower binds to **loopback (`127.0.0.1`) by default** — a fresh install is
+never reachable off-box. Front it with a reverse proxy (which terminates TLS)
+and the proxy talks to the tower over loopback.
+
+To expose the tower on a network interface you must widen the bind **and**
+configure an admin token; the server refuses to start exposed-and-unauthenticated:
+
+```bash
+# generate a strong shared admin secret
+export BOTFATHER_ADMIN_TOKEN="$(openssl rand -hex 32)"
+# widen the bind only when fronted by a proxy that terminates TLS
+export BOTFATHER_BIND=0.0.0.0
+pnpm --filter @slaw-botfather/server dev
+```
+
+The admin UI / API authenticates with `Authorization: Bearer $BOTFATHER_ADMIN_TOKEN`.
+Behaviour of `/api/admin`:
+
+| Bind | `BOTFATHER_ADMIN_TOKEN` | `/api/admin` |
+|------|-------------------------|--------------|
+| `127.0.0.1` (default) | unset | open (local dev convenience) |
+| `127.0.0.1` | set | requires the bearer token |
+| `0.0.0.0` / any non-loopback | unset | **server refuses to start** |
+| `0.0.0.0` / any non-loopback | set | requires the bearer token |
+
+Store the token in a session/login screen, not in source or `localStorage`.
+This shared-secret gate is the pre-SSO v1; the middleware is a single function
+so SSO (EntraID) can later swap the body without touching route wiring.

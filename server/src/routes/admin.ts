@@ -13,7 +13,7 @@ import {
   alerts,
   issues,
 } from "@slaw-botfather/db";
-import { decideEnrollment, revokeInstance } from "../services/enrollment.js";
+import { decideEnrollment, revokeInstance, isWildcardPattern } from "../services/enrollment.js";
 import {
   getEnterpriseLimits,
   upsertEnterpriseLimits,
@@ -89,6 +89,19 @@ export function adminRouter(db: BotfatherDb): Router {
     const { pattern, field = "hostname" } = req.body ?? {};
     if (typeof pattern !== "string" || !pattern || !["hostname", "machineId"].includes(field)) {
       res.status(400).json({ error: "pattern (string) and field (hostname|machineId) required" });
+      return;
+    }
+    // Guardrail (Phase 2 / C2): refuse overly-broad patterns that would
+    // auto-approve effectively any identity (bare `*`, `*.*`, etc.). machineId
+    // and hostname are self-asserted and spoofable, so a wildcard rule means
+    // "admit anyone on the network".
+    if (isWildcardPattern(pattern)) {
+      res.status(400).json({
+        error:
+          "wildcard auto-approve patterns are not allowed — they would admit any identity. " +
+          "Use a specific pattern, or leave enrollments pending for manual approval.",
+        code: "wildcard_pattern_rejected",
+      });
       return;
     }
     const [rule] = await db

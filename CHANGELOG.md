@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Enrollment trust hardening (Phase 2 / audit finding C2).** Two controls
+  close rogue self-enrollment and wildcard auto-approve:
+  - An optional pre-shared enrollment secret (`BOTFATHER_ENROLLMENT_SECRET`).
+    When set, `POST /enroll` must present the matching secret (request body
+    `enrollmentSecret` or the `x-botfather-enrollment-secret` header), compared
+    in constant time and rejected with `401 enrollment_secret_required` **before
+    any row is written** — so the network can't seed the pending queue. Towers
+    without a secret keep token-less enrollment (admin still gates admission).
+  - Wildcard auto-approve rules (`*`, `*.*`, and patterns whose non-`*`
+    characters are only separators) are refused at creation
+    (`400 wildcard_pattern_rejected`). `machineId`/`hostname` are self-asserted
+    and spoofable, so a wildcard rule would admit any identity.
 - **Admin API auth gate (Phase 1 / audit finding C1).** `/api/admin` is now
   guarded by `adminAuth` middleware: a shared admin secret
   (`BOTFATHER_ADMIN_TOKEN`) is required as an `Authorization: Bearer` token and

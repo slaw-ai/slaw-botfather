@@ -46,6 +46,7 @@ const config = {
   ingestRateLimitPerMin: 1000,
   bindHost: "127.0.0.1",
   adminToken: undefined,
+  enrollmentSecret: undefined,
 };
 
 beforeAll(async () => {

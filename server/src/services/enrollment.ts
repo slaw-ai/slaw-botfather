@@ -16,6 +16,19 @@ export interface EnrollResult {
   apiKey?: string;
 }
 
+/**
+ * A pattern is "overly broad" if it would auto-approve effectively any
+ * identity — a bare `*`, `*.*`, or anything whose non-`*` characters are just
+ * separators (`.`, `-`, whitespace). Such rules turn auto-approve into
+ * "admit anyone", so we refuse to create them (Phase 2 / C2 guardrail).
+ */
+export function isWildcardPattern(pattern: string): boolean {
+  const p = pattern.trim();
+  if (p === "" || !p.includes("*")) return false; // empty handled elsewhere; non-glob is fine
+  const literal = p.replace(/\*/g, "").replace(/[.\-\s]/g, "");
+  return literal.length === 0;
+}
+
 /** Simple glob → regex (supports * only, case-insensitive). */
 export function globMatch(pattern: string, value: string): boolean {
   const re = new RegExp(

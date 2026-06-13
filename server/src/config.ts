@@ -21,6 +21,14 @@ export interface BotfatherConfig {
    * Undefined → loopback-only dev convenience; required once exposed.
    */
   adminToken: string | undefined;
+  /**
+   * Optional pre-shared enrollment secret. When set, POST /enroll must carry a
+   * matching value (constant-time compared) or it is rejected before any row is
+   * written — converting "anyone on the network can create pending rows" into
+   * "only callers holding the shared secret can". Undefined → token-less
+   * enrollment (admin still gates admission of the pending queue).
+   */
+  enrollmentSecret: string | undefined;
 }
 
 export function loadConfig(): BotfatherConfig {
@@ -35,5 +43,6 @@ export function loadConfig(): BotfatherConfig {
     ingestRateLimitPerMin: Number(process.env.BOTFATHER_RATE_LIMIT ?? 120),
     bindHost: process.env.BOTFATHER_BIND ?? "127.0.0.1",
     adminToken: process.env.BOTFATHER_ADMIN_TOKEN || undefined,
+    enrollmentSecret: process.env.BOTFATHER_ENROLLMENT_SECRET || undefined,
   };
 }

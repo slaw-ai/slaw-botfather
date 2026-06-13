@@ -41,6 +41,13 @@ export const enrollRequestSchema = z.object({
       liveStream: z.boolean().default(false),
     })
     .default({}),
+  /**
+   * Optional pre-shared enrollment secret. When the tower is configured with
+   * BOTFATHER_ENROLLMENT_SECRET, callers must present a matching value here (or
+   * via the x-botfather-enrollment-secret header) or the request is rejected
+   * before any row is written. Back-compat: absent on towers that don't require it.
+   */
+  enrollmentSecret: z.string().max(512).optional(),
 });
 export type EnrollRequest = z.infer<typeof enrollRequestSchema>;
 

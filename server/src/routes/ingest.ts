@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { Router, json } from "express";
 import {
   enrollRequestSchema,
@@ -27,12 +28,27 @@ export function ingestRouter(db: BotfatherDb, config: BotfatherConfig): Router {
   const r = Router();
   r.use(json({ limit: "4mb" }));
 
-  /* ── token-less enrollment ── */
+  /* ── enrollment (token-less, or pre-shared-secret gated) ── */
   r.post("/enroll", async (req, res) => {
     const parsed = enrollRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message, code: "invalid_payload" });
       return;
+    }
+    // Pre-shared enrollment secret (Phase 2 / C2). When configured, reject any
+    // caller that doesn't present the matching secret BEFORE writing any row,
+    // so the network can't seed the pending queue. Constant-time compared.
+    if (config.enrollmentSecret) {
+      const presented =
+        parsed.data.enrollmentSecret ?? req.header("x-botfather-enrollment-secret") ?? "";
+      const expectedBuf = Buffer.from(config.enrollmentSecret);
+      const gotBuf = Buffer.from(presented);
+      const ok =
+        gotBuf.length === expectedBuf.length && timingSafeEqual(gotBuf, expectedBuf);
+      if (!ok) {
+        res.status(401).json({ error: "invalid enrollment secret", code: "enrollment_secret_required" });
+        return;
+      }
     }
     const result = await enroll(
       db,

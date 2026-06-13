@@ -15,7 +15,7 @@ for (const f of readdirSync("../packages/db/migrations").filter(f=>f.endsWith(".
   for (const s of readFileSync("../packages/db/migrations/"+f,"utf8").split("--> statement-breakpoint"))
     if (s.trim()) await client.exec(s.trim());
 const db = drizzle(client, { schema: schema });
-const config = { port: 8911, databaseUrl: "x", offlineAfterMissedHeartbeats:3, heartbeatIntervalSec:60, staleAfterHours:24, ingestRateLimitPerMin:1000, bindHost: "127.0.0.1", adminToken: undefined };
+const config = { port: 8911, databaseUrl: "x", offlineAfterMissedHeartbeats:3, heartbeatIntervalSec:60, staleAfterHours:24, ingestRateLimitPerMin:1000, bindHost: "127.0.0.1", adminToken: undefined, enrollmentSecret: undefined };
 const app = createApp(db, config);
 const server = app.listen(8911);
 attachLiveStream(server, db, new LiveHub());

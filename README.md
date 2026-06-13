@@ -84,3 +84,27 @@ Behaviour of `/api/admin`:
 Store the token in a session/login screen, not in source or `localStorage`.
 This shared-secret gate is the pre-SSO v1; the middleware is a single function
 so SSO (EntraID) can later swap the body without touching route wiring.
+
+## Security: enrollment trust
+
+By default enrollment is token-less — anyone who can reach the tower can create a
+*pending* enrollment, and an admin gates admission. To stop the network from even
+seeding the pending queue, set a **pre-shared enrollment secret**:
+
+```bash
+export BOTFATHER_ENROLLMENT_SECRET="$(openssl rand -hex 32)"
+```
+
+When set, `POST /enroll` must present the matching secret — either as the
+`enrollmentSecret` request field or the `x-botfather-enrollment-secret` header —
+compared in constant time. Mismatches are rejected with
+`401 enrollment_secret_required` **before any row is written**. Distribute the
+secret to instances via the same channel that points them at the tower URL
+(on the SLAW side, `SLAW_BOTFATHER_ENROLLMENT_SECRET`).
+
+**Auto-approve rules** are convenience, not a trust boundary: `machineId` and
+`hostname` are self-asserted and spoofable. Wildcard patterns (`*`, `*.*`, …)
+are refused at creation (`400 wildcard_pattern_rejected`) — use a specific
+pattern, or leave enrollments pending for manual approval. Auto-approve should
+only be used on a trusted enrollment network or together with the pre-shared
+secret above.

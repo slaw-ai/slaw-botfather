@@ -2,8 +2,11 @@
 
 Self-hosted **control tower** for a fleet of [SLAW](../slaw) instances. Gives an
 enterprise admin fleet-wide visibility — every machine, instance, squad, the
-issues agents are working, and the tokens/cost they burn — while each SLAW
-instance stays fully local and sovereign.
+issues agents are working, and the tokens/cost they burn. Each instance reports
+only governance **metadata and metrics** to the tower (names, roles, statuses,
+counts, costs, and issue titles); its work content — configs, secrets, issue
+bodies, comments, code, and run logs — never leaves the machine. Because the tower
+is self-hosted too, none of this leaves your environment.
 
 See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design and
 [`BUILD-PLAN.md`](./BUILD-PLAN.md) for the phased plan.

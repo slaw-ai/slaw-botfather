@@ -8,9 +8,9 @@ SLAW runs locally on each person's desktop (engineer, tester, cyber analyst), wi
 
 Design principles, in priority order:
 
-1. **Instances stay sovereign.** A SLAW instance must remain fully functional when botfather is unreachable. Botfather is observability + governance, never a runtime dependency.
+1. **Instances stay sovereign.** An *enrolled* SLAW instance remains fully functional when botfather is unreachable (enforcement is fail-open for the enrolled). Botfather is observability + governance, not a runtime dependency for instances already admitted. (A never-enrolled instance under the default `enforce` mode stays gated until it can reach the tower — see §6.)
 2. **Push, not pull.** Instances initiate all connections outbound over HTTPS. No inbound ports on desktops, works behind NAT/VPN/proxies, nothing for endpoint security to flag.
-3. **Metadata and metrics, not content.** Botfather receives names, statuses, counts, and costs — not issue bodies, comments, code, diffs, or run logs. Work content stays on the desktop.
+3. **Metadata and metrics, not content.** Botfather receives names, statuses, counts, costs, and issue **titles** (titles default on; disable via `reportIssueTitles`) — not issue bodies, comments, code, diffs, or run logs. Work content stays on the desktop.
 4. **Identity without auth (for now).** SLAW has no user auth yet, so botfather keys everything on `machineId` + `instanceId` + squad names. The schema reserves a `userPrincipal` column so EntraID can slot in later without remodelling.
 5. **One binary, one Postgres.** Botfather reuses the SLAW stack (Node + React + Postgres, pnpm monorepo) so it feels like SLAW and can share packages.
 
